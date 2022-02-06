@@ -15,3 +15,10 @@ clean:
 		$*/grader/test-inputs.json \
 		$*/grader/test-expected.json \
 		<(cat $*/grader/test-inputs.json | python $*/solution.py)
+
+%/clip:
+	python \
+		$*/grader/grade.py \
+		$*/grader/test-inputs.json \
+		$*/grader/test-expected.json \
+		<(cat $*/grader/test-inputs.json | python <(pbpaste))
