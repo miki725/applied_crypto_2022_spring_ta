@@ -1,4 +1,5 @@
 SHELL=bash
+.SECONDARY:
 
 clean:
 	rm */*.json
@@ -8,6 +9,9 @@ clean:
 
 %/test: %/input.json %/output.json
 	colordiff -u <(cat $*/input.json | python $*/solution.py) <(cat $*/output.json | python -m json.tool)
+
+%/test-clip: %/input.json %/output.json
+	colordiff -u <(cat $*/input.json | python <(pbpaste) | python -m json.tool) <(cat $*/output.json | python -m json.tool)
 
 %/grade:
 	python \
