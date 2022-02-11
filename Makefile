@@ -31,6 +31,11 @@ clean:
 		$*/grader/test-expected.json \
 		<(cat $*/grader/test-inputs.json | python $*/__init__.py)
 
+%/solution-grade:
+	cp $*/__init__.py $*/grader/$*
+	chmod +x $*/grader/$*
+	cd $*/grader && python grader.py
+
 %/diff-example: %/example-input.json %/example-output.json
 	colordiff -u \
 		<(cat $*/example-input.json | python <(pbpaste) | python -m json.tool) \
@@ -54,3 +59,8 @@ clean:
 		$*/grader/test-inputs.json \
 		$*/grader/test-expected.json \
 		<(cat $*/grader/test-inputs.json | python <(pbpaste))
+
+%/grade:
+	pbpaste > $*/grader/$*
+	chmod +x $*/grader/$*
+	cd $*/grader && python grader.py

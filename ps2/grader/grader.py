@@ -14,7 +14,7 @@ def format_trade(op, symbol, num):
     s = str(num)
     n = 8 - len(s)
     pad = ' '*n
-    
+
     return bytes('%s %s: %s%s' % (op, symbol, s, pad), encoding='utf8')
 
 def flip_trade_pt(bstr):
@@ -28,9 +28,9 @@ def random_trade(max_shares, max_ticker=len(ticker_symbols)):
     n  = secrets.randbelow(max_shares) + 1
 
     return format_trade(op, co, n)
-    
 
-            
+
+
 
 # news_trades will get two values:
 # One with a single trade that should be replaced.
@@ -55,7 +55,7 @@ def random_trade(max_shares, max_ticker=len(ticker_symbols)):
 def create_problem_1_instance():
     k = secrets.token_bytes(16)
     ctx = AES.new(k, AES.MODE_ECB)
-    
+
     old_trades = []
 
     # There will be 1 to 3 entries for each possible trade.
@@ -96,7 +96,7 @@ def create_problem_1_instance():
     possible_replacers = {}
     trades_to_target = {}
     decoy_trades = {}
-    
+
     old_pt_b = b''
     for op, ticker, num in old_trades:
         one_pt = format_trade(op, ticker, num)
@@ -124,7 +124,7 @@ def create_problem_1_instance():
     decoy_possibilities = list(decoy_trades.keys())
     random.shuffle(decoy_possibilities)
     day_two_trade_list.append(decoy_possibilities[0])
-    
+
     other_tickers = [x for x in ticker_symbols if x != info_1[1]]
     for i in range(secrets.randbelow(3) + 1):
         random.shuffle(other_tickers)
@@ -148,13 +148,13 @@ def create_problem_1_instance():
     new_trades.append(ctx.encrypt(day_one_trades_pt).hex())
     new_trades.append(ctx.encrypt(b''.join(day_two_trade_list)).hex())
     input_vals['new_trades'] = new_trades
-    
+
     return k, input_vals, possible_replacers, best_replacement_ct, trades_to_target
 
 def create_problem_2_instance():
     k = secrets.token_bytes(16)
     ctx1 = AES.new(k, AES.MODE_CTR, nonce=b'01234567')
-    ctx2 = AES.new(k, AES.MODE_CTR, nonce=b'01234567')    
+    ctx2 = AES.new(k, AES.MODE_CTR, nonce=b'01234567')
     n1 = secrets.randbelow(4) + 4  # n is between 4 and 7.
     n2 = secrets.randbelow(n1-2) + 2
     pt1_list = [random_trade(1000) for _ in range(n1)]
@@ -169,17 +169,17 @@ def create_problem_2_instance():
         'old_ct' : old_ct_b.hex(),
         'new_ct' : new_ct_b.hex()
         }
-    
+
     return k, input_vals, new_pt_b.hex()
-    
+
 
 def create_problem_3_instance():
     k = secrets.token_bytes(16)
     ctx = AES.new(k, AES.MODE_CTR, nonce=b'11111111')
-    mctx = AES.new(k, AES.MODE_CTR, nonce=b'11111111')    
+    mctx = AES.new(k, AES.MODE_CTR, nonce=b'11111111')
     old_pt = b''
     moded_pt = b''
-    
+
     for i in range(secrets.randbelow(5) + 2):
         op     = trade_ops[secrets.randbits(1)]
         ticker = ticker_symbols[secrets.randbelow(len(ticker_symbols))]
@@ -195,7 +195,7 @@ def create_problem_3_instance():
     moded_ct  = mctx.encrypt(moded_pt)
 
     input_vals = { 'todays_ct' : todays_ct.hex() }
-    
+
 
     return k, input_vals, moded_ct.hex()
 
@@ -219,7 +219,7 @@ def create_problem_4_instance():
     anums = []
     ilist = []
     olist = []
-    
+
     for i in range(2):
       ticker = ticker_symbols[secrets.randbelow(len(ticker_symbols))]
       op  = trade_ops[secrets.randbits(1)]
@@ -240,13 +240,13 @@ def create_problem_4_instance():
     in1 = { 'trade_list' : ilist, 'expected_num' : enums,
             'actual_num' : anums }
     return k, in1, olist
-        
+
 def check_one_p1(sent_ct, attack_ct, possibles, to_replace, best):
     sent_ct = bytes.fromhex(sent_ct)
     attack_ct = bytes.fromhex(attack_ct)
-    
+
     used_other_than_the_best = False
-    
+
     if len(sent_ct) != len(attack_ct):
         return 0
     while sent_ct:
@@ -266,9 +266,9 @@ def check_one_p1(sent_ct, attack_ct, possibles, to_replace, best):
 
     if used_other_than_the_best:
         return -1
-    
+
     return 1
-                
+
 
 def grade_problem_1(jblob, key, invals, possibles, best, to_replace):
     if not "problem 1" in jblob:
@@ -285,7 +285,7 @@ def grade_problem_1(jblob, key, invals, possibles, best, to_replace):
 
     for i in range(len(new_trades)):
         if i > len(res):
-            err("Missing result", i + 1)
+            err("Missing result %d" % (i + 1))
         else:
             sent_ct   = new_trades[i]
             attack_ct = res[i]
@@ -303,7 +303,7 @@ def grade_problem_1(jblob, key, invals, possibles, best, to_replace):
             return 3
         err("    -1 point: Didn't always use the highest trade value.")
         return 2
-        
+
     return score
 
 def grade_problem_2(jblob, expected):
@@ -324,7 +324,7 @@ def grade_problem_3(jblob, expected):
     if not "problem 3" in jblob:
         err("not provided.")
         return 0
-    
+
     if (expected.upper() == jblob["problem 3"].upper()):
         err("pass.")
         return 2
@@ -339,21 +339,21 @@ def grade_problem_4(jblob, expected):
         return 0
 
     score = 0
-    
+
     res = jblob["problem 4"]
 
     err()
-    
+
     for i in range(len(expected)):
         if (i > len(res)):
-            err("Missing result", i + 1)
+            err("Missing result %d" % (i + 1))
         else:
             if res[i].lower().strip() == expected[i].lower().strip():
                 err("    Part %d: pass." % (i + 1))
                 score += 1
             else:
-                err("    res[i] != expected[i]:", res[i], expected[i])
-                
+                err("    res[i] != expected[i]: {} {}".format(res[i], expected[i]))
+
     return score
 
 def err(s='', end='\n'):
@@ -373,7 +373,7 @@ def grade():
     p2_key, p2_invals, p2_expected = create_problem_2_instance()
     p3_key, p3_invals, p3_expected = create_problem_3_instance()
     p4_key, p4_invals, p4_expected = create_problem_4_instance()
-    
+
     jblob = json.dumps({
         "problem 1" : p1_invals,
         "problem 2" : p2_invals,
@@ -400,7 +400,7 @@ def grade():
         exit_showing_errors()
 
     scores = []
-    
+
     scores.append(grade_problem_1(jblob, p1_key, p1_invals, p1_poss, best, p1_repl))
     scores.append(grade_problem_2(jblob, p2_expected))
     scores.append(grade_problem_3(jblob, p3_expected))
@@ -431,5 +431,3 @@ max_scores = [30, 30, 20, 20]
 scores = grade()
 
 output_json(max_scores, scores)
-    
-
