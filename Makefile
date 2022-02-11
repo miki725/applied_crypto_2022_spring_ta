@@ -4,6 +4,7 @@ SHELL=bash
 clean:
 	-rm */ps*
 	-rm */*.sh
+	-rm */*/*.zip
 
 %.json:
 	curl -Ls https://raw.githubusercontent.com/viega/applied_crypto_2022_spring/master/$(dir $*)/$(notdir $*).json > $@
@@ -14,6 +15,9 @@ clean:
 %/bin:
 	cp $*/__init__.py $*/$*
 	chmod +x $*/$*
+
+%/grader/grader.zip:
+	cd $*/grader && zip grader.zip $$(git ls-files .)
 
 %/solution-diff-example: %/example-input.json %/example-output.json
 	colordiff -u \

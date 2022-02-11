@@ -4,6 +4,7 @@ __pycache__
 tags
 errors.out
 /*/grader/ps*
+/*/grader/*.zip
 /*/*.json
 inputs.json
 outputs.json
