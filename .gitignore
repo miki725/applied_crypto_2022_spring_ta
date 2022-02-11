@@ -3,6 +3,7 @@ __pycache__
 .DS_Store
 tags
 errors.out
-*/grader/ps*
+/*/grader/ps*
+/*/*.json
 inputs.json
 outputs.json

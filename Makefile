@@ -2,10 +2,18 @@ SHELL=bash
 .SECONDARY:
 
 clean:
-	rm */*.json
+	-rm */ps*
+	-rm */*.sh
 
 %.json:
 	curl -Ls https://raw.githubusercontent.com/viega/applied_crypto_2022_spring/master/$(dir $*)/$(notdir $*).json > $@
+
+%/setup.sh: setup.sh
+	cp setup.sh $*/setup.sh
+
+%/bin:
+	cp $*/__init__.py $*/$*
+	chmod +x $*/$*
 
 %/solution-diff-example: %/example-input.json %/example-output.json
 	colordiff -u \
