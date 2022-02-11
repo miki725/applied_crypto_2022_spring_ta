@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+cp /autograder/submission/* /autograder/source/
+cd /autograder/source
+
+chmod +x ps2
+
+python3 grader.py > ../results/results.json
+
+
