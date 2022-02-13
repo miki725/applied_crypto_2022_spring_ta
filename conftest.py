@@ -108,34 +108,43 @@ def problem(request, data):
 
 
 @dataclasses.dataclass
+class SubtestResult:
+    weight: typing.Optional[int] = None
+    passed: bool = False
+
+
+@dataclasses.dataclass
 class Score:
     name: str
     worth: int
     score: int = 0
-    subtests_attempted: int = 0
-    subtests_succeeded: int = 0
+    subtests: typing.List[SubtestResult] = dataclasses.field(default_factory=list)
     subtests_fixture: typing.Any = None
 
     @contextlib.contextmanager
-    def test(self, msg, **kwargs):
-        self.subtests_attempted += 1
-        with self.subtests_fixture.test(msg, **kwargs) as subtest:
+    def test(self, msg, weight: int = None, **kwargs):
+        subtest = SubtestResult(weight=weight)
+        self.subtests.append(subtest)
+        with self.subtests_fixture.test(msg, **kwargs):
             try:
-                yield subtest
+                yield
             except Exception:
                 raise
             else:
-                self.subtests_succeeded += 1
+                subtest.passed = True
 
     def with_subtests(self, subtests: typing.Any):
         self.subtests_fixture = subtests
         return self
 
     def finalize(self, passed: bool):
-        if self.subtests_attempted:
-            self.score = (
-                self.worth // self.subtests_attempted
-            ) * self.subtests_succeeded
+        if self.subtests:
+            default_weight = self.worth // len(self.subtests)
+            self.score = functools.reduce(
+                lambda a, b: (a + (b.weight or default_weight)),
+                filter(lambda i: i.passed, self.subtests),
+                0,
+            )
         else:
             self.score = self.worth if passed else 0
 

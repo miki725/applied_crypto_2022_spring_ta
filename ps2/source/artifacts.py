@@ -1,3 +1,4 @@
+import typing
 from Crypto.Cipher import AES
 import secrets
 import random
@@ -45,7 +46,7 @@ def create_problem_1_instance():
     k = secrets.token_bytes(16)
     ctx = AES.new(k, AES.MODE_ECB)
 
-    old_trades = []
+    old_trades: typing.List[typing.Tuple[str, str, int]] = []
 
     # There will be 1 to 3 entries for each possible trade.
 
@@ -78,6 +79,7 @@ def create_problem_1_instance():
             break
 
     best_replacement_ct = b""
+    best_replacement_pt = b""
     largest = 0
     possible_replacers = {}
     trades_to_target = {}
@@ -92,6 +94,7 @@ def create_problem_1_instance():
             if num > largest:
                 largest = num
                 best_replacement_ct = one_ct
+                best_replacement_pt = one_pt
         if op == info_1[0] and ticker == info_1[1]:
             trades_to_target[one_pt] = one_ct
         if op != info_1[0] and ticker == info_1[1]:
@@ -135,7 +138,17 @@ def create_problem_1_instance():
     new_trades.append(ctx.encrypt(b"".join(day_two_trade_list)).hex())
     input_vals["new_trades"] = new_trades
 
-    return k, input_vals, possible_replacers, best_replacement_ct, trades_to_target
+    return {
+        "key": k.hex(),
+        "input": input_vals,
+        "old_trades": [format_trade(*i).decode() for i in old_trades],
+        "best": {
+            "ciphertext": best_replacement_ct.hex(),
+            "plaintext": best_replacement_pt.decode(),
+        },
+        "possible": {k.decode(): v.hex() for k, v in possible_replacers.items()},
+        "targets": {k.decode(): v.hex() for k, v in trades_to_target.items()},
+    }
 
 
 def create_problem_2_instance():
@@ -157,7 +170,11 @@ def create_problem_2_instance():
         "new_ct": new_ct_b.hex(),
     }
 
-    return k, input_vals, new_pt_b.hex()
+    return {
+        "key": k.hex(),
+        "input": input_vals,
+        "expected": new_pt_b.hex(),
+    }
 
 
 def create_problem_3_instance():
@@ -183,7 +200,11 @@ def create_problem_3_instance():
 
     input_vals = {"todays_ct": todays_ct.hex()}
 
-    return k, input_vals, moded_ct.hex()
+    return {
+        "key": k.hex(),
+        "input": input_vals,
+        "expected": moded_ct.hex(),
+    }
 
 
 def create_problem_4_instance():
@@ -212,38 +233,19 @@ def create_problem_4_instance():
         olist.append(ctx.encrypt(mpt).hex())
 
     in1 = {"trade_list": ilist, "expected_num": enums, "actual_num": anums}
-    return k, in1, olist
+    return {
+        "key": k.hex(),
+        "input": in1,
+        "expected": olist,
+    }
 
 
 if __name__ == "__main__":
-    p1_key, p1_invals, p1_poss, best, p1_repl = create_problem_1_instance()
-    p2_key, p2_invals, p2_expected = create_problem_2_instance()
-    p3_key, p3_invals, p3_expected = create_problem_3_instance()
-    p4_key, p4_invals, p4_expected = create_problem_4_instance()
-
     artifacts = {
-        "problem 1": {
-            "key": p1_key.hex(),
-            "best": best.hex(),
-            "possible": {k.decode(): v.hex() for k, v in p1_poss.items()},
-            "replacement": {k.decode(): v.hex() for k, v in p1_repl.items()},
-            "input": p1_invals,
-        },
-        "problem 2": {
-            "key": p2_key.hex(),
-            "input": p2_invals,
-            "expected": p2_expected,
-        },
-        "problem 3": {
-            "key": p3_key.hex(),
-            "input": p3_invals,
-            "expected": p3_expected,
-        },
-        "problem 4": {
-            "key": p4_key.hex(),
-            "input": p4_invals,
-            "expected": p4_expected,
-        },
+        "problem 1": create_problem_1_instance(),
+        "problem 2": create_problem_2_instance(),
+        "problem 3": create_problem_3_instance(),
+        "problem 4": create_problem_4_instance(),
     }
 
     print(json.dumps(artifacts, indent=4))

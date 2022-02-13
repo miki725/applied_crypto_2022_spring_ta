@@ -45,6 +45,9 @@ endif
 	cp $^ $@
 	chmod +x $@
 
+pdb:
+	$(eval export PYTEST_FLAGS=$(PYTEST_FLAGS) --pdb)
+
 %/grade: %/submission/ps %/run_autograder copy
 	cd $* && ./run_autograder
 

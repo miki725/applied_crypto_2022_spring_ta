@@ -93,5 +93,6 @@ pytest $SOURCE/tests* \
     --disable-pytest-warnings \
     --no-header \
     --capture=no \
+    $PYTEST_FLAGS \
     2> $REPORT_JSON \
     || true
