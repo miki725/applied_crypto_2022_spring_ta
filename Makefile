@@ -46,7 +46,6 @@ endif
 	chmod +x $@
 
 %/grade: %/submission/ps %/run_autograder copy
-	cd $* && ls -la
 	cd $* && ./run_autograder
 
 %/source/grading.zip: clean copy

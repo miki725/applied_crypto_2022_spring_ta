@@ -27,7 +27,7 @@ def test_problem_3(score: Score, problem: Problem):
         zip_longest(problem.output, problem.reference)
     ):
         with score.test(msg=f"part {i}", i=i):
-            assert output == reference
+            assert output.lower() == reference.lower()
 
 
 @weight(name="problem 4", worth=2)
