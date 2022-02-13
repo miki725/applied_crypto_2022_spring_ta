@@ -1,78 +1,55 @@
 SHELL=bash
 .SECONDARY:
 
+SOURCE_FILES=$(wildcard *.py) $(wildcard Pipfile*) $(wildcard *.sh) run_autograder
+PS=$(wildcard ps*)
+
+foo:
+	echo $(addsuffix /submission/ps,$(PS))
+
 clean:
-	-rm */ps*
-	-rm */*.sh
 	-rm */*/*.zip
+	-rm */*/*.log
+	-rm */*/_*.json
+	-rm -rf **/__pycache__
+	-rm */*/results/*
+	-rm */submission/ps
+
+copy-%:
+	cp $(SOURCE_FILES) $*/source/
+
+copy: $(addprefix copy-,$(PS))
 
 %.json:
-	curl -Ls https://raw.githubusercontent.com/viega/applied_crypto_2022_spring/master/$(dir $*)/$(notdir $*).json > $@
+	curl -Ls https://raw.githubusercontent.com/viega/applied_crypto_2022_spring/master/$(firstword $(subst /, ,$*))/$(notdir $*).json \
+		| python -m json.tool \
+		> $@
 
-%/setup.sh: setup.sh
-	cp setup.sh $*/setup.sh
+ifeq "$(PASTE)" "true"
+$(shell rm  $(addsuffix /submission/ps,$(PS)) 2> /dev/null)
+%/submission/ps:
+	pbpaste > $@
+	chmod +x $@
+else
+%/submission/ps: %/source/solution.py
+	cp $^ $@
+	chmod +x $@
+endif
 
-%/bin:
-	cp $*/__init__.py $*/$*
-	chmod +x $*/$*
-
-%/grader/grader.zip:
-	cd $*/grader && zip grader.zip $$(git ls-files .)
-
-%/solution-diff-example: %/example-input.json %/example-output.json
+%/diff: %/submission/example-input.json %/submission/example-output.json %/submission/ps
 	colordiff -u \
-		<(cat $*/example-input.json | python $*/__init__.py) \
-		<(cat $*/example-output.json | python -m json.tool)
+		<(cat $*/submission/example-input.json | ./$*/submission/ps | python -m json.tool) \
+		<(cat $*/submission/example-output.json | python -m json.tool)
 
-%/solution-diff-expected:
-	colordiff -u \
-		<(cat $*/grader/test-inputs.json | python $*/__init__.py) \
-		<(cat $*/grader/test-expected.json | python -m json.tool)
+%/run_autograder: ./run_autograder
+	cp $^ $@
+	chmod +x $@
 
-%/solution-grade-example: %/example-input.json %/example-output.json
-	python \
-		$*/grader/grade.py \
-		$*/example-input.json \
-		$*/example-output.json \
-		<(cat $*/example-input.json | python $*/__init__.py)
+%/grade: %/submission/ps %/run_autograder copy
+	cd $* && ls -la
+	cd $* && ./run_autograder
 
-%/solution-grade-expected:
-	python \
-		$*/grader/grade.py \
-		$*/grader/test-inputs.json \
-		$*/grader/test-expected.json \
-		<(cat $*/grader/test-inputs.json | python $*/__init__.py)
-
-%/solution-grade:
-	cp $*/__init__.py $*/grader/$*
-	chmod +x $*/grader/$*
-	cd $*/grader && python grader.py
-
-%/diff-example: %/example-input.json %/example-output.json
-	colordiff -u \
-		<(cat $*/example-input.json | python <(pbpaste) | python -m json.tool) \
-		<(cat $*/example-output.json | python -m json.tool)
-
-%/diff-expected:
-	colordiff -u \
-		<(cat $*/grader/test-inputs.json | python <(pbpaste) | python -m json.tool)\
-		<(cat $*/grader/test-expected.json | python -m json.tool)
-
-%/grade-example:
-	python \
-		$*/grader/grade.py \
-		$*/example-input.json \
-		$*/example-output.json \
-		<(cat $*/example-input.json | python <(pbpaste))
-
-%/grade-expected:
-	python \
-		$*/grader/grade.py \
-		$*/grader/test-inputs.json \
-		$*/grader/test-expected.json \
-		<(cat $*/grader/test-inputs.json | python <(pbpaste))
-
-%/grade:
-	pbpaste > $*/grader/$*
-	chmod +x $*/grader/$*
-	cd $*/grader && python grader.py
+%/source/grading.zip: clean copy
+	cd $*/source \
+		&& zip grading.zip * \
+		&& zip -sf grading.zip

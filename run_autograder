@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+# gradescope rules
+# see https://gradescope-autograders.readthedocs.io/en/latest/specs/
+#
+# results/results.json
+#   grade results
+
+SOURCE=./source
+SUBMISSION=./submission
+RESULTS=./results
+SETUP=$SUBMISSION/setup.sh
+
+ARTIFACTS_JSON=$SOURCE/_artifacts.json
+INPUT_JSON=$SOURCE/_input.json
+OUTPUT_JSON=$SOURCE/_output.json
+REFERENCE_JSON=$SOURCE/_reference.json
+REPORT_JSON=$RESULTS/results.json
+ERRORS=$SOURCE/_errors.log
+
+ARTIFACTS="python3 $SOURCE/artifacts.py"
+INPUT="python3 $SOURCE/input.py"
+SOLUTION="python3 $SOURCE/solution.py"
+PS=${PS:-$SUBMISSION/ps*}
+
+exec 2> $RESULTS/stderr
+
+set -x
+
+mkdir -p $RESULTS
+cat > $REPORT_JSON <<EOF
+{
+    "stdout_visibility": "visible",
+    "score": 0,
+    "output": "submitted script failed to run"
+}
+EOF
+
+rm -rf $SOURCE/*.json $SOURCE/*.log || true
+if [ -f $SETUP ]; then
+    chmod +x $SETUP
+    $SETUP
+fi
+
+# if we use artifacts for grading, then we generate artifacts file
+# otherwise we use input.py to generate input data
+# and shold rely on sample solution below
+if $ARTIFACTS > $ARTIFACTS_JSON; then
+    $INPUT \
+        < $ARTIFACTS_JSON \
+        > $INPUT_JSON
+else
+    $INPUT \
+        > $INPUT_JSON
+fi
+
+if [ -f $PS ]; then
+    chmod +x $PS
+fi
+
+$PS \
+    < $INPUT_JSON \
+    > $OUTPUT_JSON \
+    2> $ERRORS \
+    || (
+        echo "$PS exited with an error. autograding cannot grade this submission"
+        echo
+        cat $ERRORS;
+        exit 1
+    ) \
+    || exit 0
+
+cat $OUTPUT_JSON \
+    | python3 -m json.tool \
+    > /dev/null \
+    || (
+        echo "$PS produced invalid json output:"
+        echo
+        cat $OUTPUT_JSON
+        exit 1
+    ) \
+    || exit 0
+
+# solution might not exist
+# and instead grading might rely on artifacts file
+$SOLUTION \
+    < $INPUT_JSON \
+    > $REFERENCE_JSON \
+    || true
+
+pytest $SOURCE/tests* \
+    --verbose --verbose \
+    --disable-pytest-warnings \
+    --no-header \
+    --capture=no \
+    2> $REPORT_JSON \
+    || true
