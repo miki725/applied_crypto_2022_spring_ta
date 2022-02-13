@@ -1,7 +1,7 @@
 import typing
-from itertools import zip_longest, islice
+from itertools import islice, zip_longest
 
-from .conftest import Problem, weight, Score
+from .conftest import Problem, Score, weight
 
 
 def take_in_chunks(data: str, n) -> typing.Iterator[str]:

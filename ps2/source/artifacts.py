@@ -1,8 +1,9 @@
-import typing
-from Crypto.Cipher import AES
-import secrets
-import random
 import json
+import random
+import secrets
+import typing
+
+from Crypto.Cipher import AES
 
 
 ticker_symbols = [

@@ -3,9 +3,9 @@ import dataclasses
 import functools
 import itertools
 import json
+import pathlib
 import sys
 import typing
-import pathlib
 
 import pytest
 

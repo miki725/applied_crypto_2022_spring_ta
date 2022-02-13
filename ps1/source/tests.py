@@ -1,6 +1,6 @@
 from itertools import zip_longest
 
-from .conftest import Problem, weight, Score
+from .conftest import Problem, Score, weight
 
 
 @weight(name="problem 1", worth=2)
