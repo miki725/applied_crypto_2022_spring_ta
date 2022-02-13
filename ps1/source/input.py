@@ -153,8 +153,8 @@ if __name__ == "__main__":
                 ],
                 "problem 3": [
                     hexlify(random_hex(5, 50)),
-                    hexlify(random_hex(5, 25)),
-                    hexlify(random_hex(5, 15)),
+                    hexlify("ff" + random_hex(5, 25)),
+                    hexlify("0f" + random_hex(5, 15)),
                 ],
                 "problem 4": [
                     secrets.randbelow(50000) + 1,  #
