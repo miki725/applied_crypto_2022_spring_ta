@@ -73,6 +73,18 @@ make PASTE=true <problemset>/diff
 make PASTE=true <problemset>/grade
 ```
 
+### Testing With `pdbpp`
+
+[pdbpp](https://github.com/pdbpp/pdbpp) is very useful to debug pytest failures
+locally when working on the grading script. Simply add `pdb` make target to
+enable it:
+
+```bash
+make pdb <problemset>/grade
+```
+
+On any failure pytest will drop into `pdbpp` sheell.
+
 ### Prepare `grading.zip`
 
 ```bash
