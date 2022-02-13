@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 https://github.com/viega/applied_crypto_2022_spring/tree/master/ps1
 """

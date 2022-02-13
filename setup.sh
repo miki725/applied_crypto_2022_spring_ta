@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
-
-python3 -m pip install dataclasses
+cd /autograder/source
+python3 -m pip install pipenv
+pipenv install --system
