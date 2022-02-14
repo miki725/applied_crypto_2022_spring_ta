@@ -96,3 +96,13 @@ pytest $SOURCE/tests* \
     $PYTEST_FLAGS \
     2> $REPORT_JSON \
     || true
+
+echo
+echo tests used input json:
+
+cat $INPUT_JSON | python -m json.tool
+
+echo
+echo $PS generated json:
+
+cat $OUTPUT_JSON | python -m json.tool
