@@ -100,9 +100,9 @@ pytest $SOURCE/tests* \
 echo
 echo tests used input json:
 
-cat $INPUT_JSON | python -m json.tool
+cat $INPUT_JSON | python3 -m json.tool
 
 echo
 echo $PS generated json:
 
-cat $OUTPUT_JSON | python -m json.tool
+cat $OUTPUT_JSON | python3 -m json.tool
