@@ -37,9 +37,13 @@ cat > $REPORT_JSON <<EOF
 EOF
 
 rm -rf $SOURCE/*.json $SOURCE/*.log || true
+
 if [ -f $SETUP ]; then
     chmod +x $SETUP
-    $SETUP
+    (
+        cd $(dirname $SETUP)
+        ./$(basename $SETUP)
+    )
 fi
 
 # if we use artifacts for grading, then we generate artifacts file
