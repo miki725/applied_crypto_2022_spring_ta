@@ -2,6 +2,7 @@
 """
 https://github.com/viega/applied_crypto_2022_spring/tree/master/ps2
 """
+import functools
 import itertools
 import json
 import sys
@@ -9,8 +10,8 @@ import typing
 from dataclasses import dataclass
 
 
-def xor(a: bytes, b: bytes) -> bytes:
-    return bytes(i ^ j for i, j in zip(a, b))
+def xor(*args) -> bytes:
+    return bytes(functools.reduce(lambda a, b: a ^ b, i) for i in zip(*args))
 
 
 def take_in_chunks(data: bytes, n) -> typing.Iterator[bytes]:
