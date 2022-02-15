@@ -51,6 +51,17 @@ In order to use all deps locally you **must** activate pipenv envs via:
 pipenv shell
 ```
 
+## Python Shell
+
+Solutions should be importable from the shell:
+
+```python
+➜ ptpython
+>>> from ps2.source.solution import xor
+>>> xor(b'hello', b'world')
+b'\x1f\n\x1e\x00\x0b'
+```
+
 ## Makefile Utilities
 
 ### Testing Reference Solution

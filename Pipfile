@@ -9,6 +9,7 @@ pytest = "*"
 pytest-subtests = "*"
 pdbpp = "*"
 dataclasses = "*"
+ptpython = "*"
 
 [dev-packages]
 
