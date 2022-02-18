@@ -120,6 +120,21 @@ class Score:
     score: int = 0
     subtests: typing.List[SubtestResult] = dataclasses.field(default_factory=list)
     subtests_fixture: typing.Any = None
+    manual: bool = False
+
+    @property
+    def final_score(self):
+        if self.manual:
+            return 0
+        else:
+            return self.score
+
+    @property
+    def final_worth(self):
+        if self.manual:
+            return 0
+        else:
+            return self.worth
 
     @contextlib.contextmanager
     def test(self, msg, weight: int = None, **kwargs):
@@ -152,16 +167,29 @@ class Score:
 ALL_SCORES: typing.Dict[str, Score] = {}
 
 
+def problem_results(name: str, scores: typing.List[Score]) -> dict:
+    score = sum([i.score for i in scores])
+    final_score = sum([i.final_score for i in scores])
+
+    is_manual = any([i.manual for i in scores])
+
+    max_score = sum([i.worth for i in scores])
+    final_max_score = sum([i.final_worth for i in scores])
+
+    result = {"name": name, "max_score": final_max_score, "score": final_score}
+
+    if is_manual:
+        result["output"] = f"Autograded {score}/{max_score} pending manual grading"
+
+    return result
+
+
 @pytest.fixture(scope="session", autouse=True)
 def aggregate_scores():
     yield
 
     tests = [
-        {
-            "name": name,
-            "max_score": sum([i.worth for i in scores]),
-            "score": sum([i.score for i in scores]),
-        }
+        problem_results(name, scores)
         for name, scores in [
             (name, list(scores))
             for name, scores in itertools.groupby(
@@ -196,11 +224,12 @@ def score(
     score.finalize(passed=did_test_pass(request))
 
 
-def weight(name: str, worth: int):
+def weight(name: str, worth: int, manual: bool = False):
     def wrapper(f):
         f.score = ALL_SCORES[f.__name__] = Score(
             name=name,
             worth=worth,
+            manual=manual,
         )
         return f
 

@@ -30,7 +30,7 @@ def test_problem_3(score: Score, problem: Problem):
             assert output.lower() == reference.lower()
 
 
-@weight(name="problem 4", worth=2)
+@weight(name="problem 4", worth=2, manual=True)
 def test_problem_4(score: Score, problem: Problem):
     for i, (output, input) in enumerate(zip_longest(problem.output, problem.input)):
         with score.test(msg=f"part {i}", i=i):
