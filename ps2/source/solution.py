@@ -38,7 +38,7 @@ def log(a: T) -> T:
 class Trade:
     all_bytes: bytes
     """
-    all trade bytes
+    can either be plaintext utf-8 encoded bytes or ciphertext of the trade
     """
 
     def __post_init__(self):
@@ -49,24 +49,29 @@ class Trade:
         return [cls(i) for i in take_in_chunks(bytes.fromhex(data), 16)]
 
     @property
-    def op(self):
+    def operation(self):
         return self.all_bytes[0:1]
 
     @property
-    def co(self):
+    def company(self):
         return self.all_bytes[2:6]
 
     @property
     def shares(self):
         return int(self.all_bytes[8:])
 
-    def does_it_match(self, op: bytes, co: bytes) -> bool:
-        return self.op == op and self.co == co
+    def does_it_match(self, operation: bytes, company: bytes) -> bool:
+        return self.operation == operation and self.company == company
 
     def does_it_match_any_of(self, other: typing.List["Trade"]) -> bool:
-        return any([self.does_it_match(op=i.op, co=i.co) for i in other])
+        return any(
+            [
+                self.does_it_match(operation=i.operation, company=i.company)
+                for i in other
+            ]
+        )
 
-    def swap_op(self):
+    def swap_operation(self):
         self.all_bytes = xor(self.all_bytes, xor(b"B", b"S") + b"\x00" * 15)
         return self
 
@@ -77,7 +82,7 @@ class Trade:
 
 
 @dataclass
-class PlaintextCiphertext:
+class PlaintextCiphertextPair:
     ciphertext: Trade
     plaintext: Trade
 
@@ -93,47 +98,57 @@ class Problem1:
     new_trades: typing.List[str]
 
     @property
-    def old_trades(self):
+    def old_trades_pairs(self):
         return [
-            PlaintextCiphertext(plaintext=p, ciphertext=c)
+            PlaintextCiphertextPair(plaintext=p, ciphertext=c)
             for p, c in zip(Trade.from_str(self.old_pt), Trade.from_str(self.old_ct))
         ]
 
     @property
-    def to_replace_with(self) -> typing.Optional[PlaintextCiphertext]:
+    def possible_replacement_trades_pairs(self) -> typing.List[PlaintextCiphertextPair]:
+        return [
+            i
+            for i in self.old_trades_pairs
+            if i.plaintext.does_it_match(
+                operation=self.op_2.encode(), company=self.co_2.encode()
+            )
+        ]
+
+    @property
+    def best_replacement_trade(self) -> Trade:
         return next(
-            iter(
-                sorted(
-                    [
-                        i
-                        for i in self.old_trades
-                        if i.plaintext.does_it_match(
-                            op=self.op_2.encode(), co=self.co_2.encode()
-                        )
-                    ],
+            (
+                i.ciphertext
+                for i in sorted(
+                    self.possible_replacement_trades_pairs,
                     key=lambda i: i.plaintext.shares,
                     reverse=True,
                 )
             ),
-            None,
         )
 
     @property
-    def to_match(self) -> typing.List[PlaintextCiphertext]:
+    def matching_trades(self) -> typing.List[Trade]:
+        """
+        Matching trades from old trades to be replaced.
+
+        New trades can be compared to these trades to figure out if they need
+        to be replaced
+        """
         return [
-            i
-            for i in self.old_trades
-            if i.plaintext.does_it_match(op=self.op_1.encode(), co=self.co_1.encode())
+            i.ciphertext
+            for i in self.old_trades_pairs
+            if i.plaintext.does_it_match(
+                operation=self.op_1.encode(), company=self.co_1.encode()
+            )
         ]
 
     def replace_trades(self, trades: str) -> str:
-        if not self.to_replace_with:
-            return trades
         return "".join(
             (
                 (
-                    self.to_replace_with.ciphertext.all_bytes
-                    if trade.does_it_match_any_of([i.ciphertext for i in self.to_match])
+                    self.best_replacement_trade.all_bytes
+                    if trade.does_it_match_any_of([i for i in self.matching_trades])
                     else trade.all_bytes
                 ).hex()
                 for trade in Trade.from_str(trades)
@@ -152,15 +167,11 @@ class Problem2:
     new_ct: str
 
     @property
-    def encryption_stream(self) -> bytes:
-        pt = bytes.fromhex(self.old_pt)
-        ct = bytes.fromhex(self.old_ct)
-        return xor(pt, ct)
-
-    @property
     def decrypted_trades(self) -> str:
-        ct = bytes.fromhex(self.new_ct)
-        return xor(ct, self.encryption_stream).hex()
+        old_plaintext = bytes.fromhex(self.old_pt)
+        old_ciphertext = bytes.fromhex(self.old_ct)
+        new_ciphertext = bytes.fromhex(self.new_ct)
+        return xor(new_ciphertext, old_plaintext, old_ciphertext).hex()
 
 
 def problem2(data: Problem2):
@@ -174,7 +185,7 @@ class Problem3:
     @property
     def replaced_trades(self):
         return b"".join(
-            [i.swap_op().all_bytes for i in Trade.from_str(self.todays_ct)]
+            i.swap_operation().all_bytes for i in Trade.from_str(self.todays_ct)
         ).hex()
 
 
@@ -191,7 +202,7 @@ class Problem4:
     @property
     def replaced_trades(self) -> typing.List[str]:
         return [
-            trade.swap_op().swap_shares(old=expected, new=actual).all_bytes.hex()
+            trade.swap_operation().swap_shares(old=expected, new=actual).all_bytes.hex()
             for trade, expected, actual in zip(
                 Trade.from_str("".join(self.trade_list)),
                 self.expected_num,
