@@ -107,8 +107,9 @@ class Problem1:
                     [
                         i
                         for i in self.old_trades
-                        if i.plaintext.op == self.op_2.encode()
-                        and i.plaintext.co == self.co_2.encode()
+                        if i.plaintext.does_it_match(
+                            op=self.op_2.encode(), co=self.co_2.encode()
+                        )
                     ],
                     key=lambda i: i.plaintext.shares,
                     reverse=True,
