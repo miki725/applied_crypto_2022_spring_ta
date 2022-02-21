@@ -10,7 +10,7 @@ import typing
 from dataclasses import dataclass
 
 
-def xor(*args) -> bytes:
+def xor(*args: bytes) -> bytes:
     return bytes(functools.reduce(lambda a, b: a ^ b, i) for i in zip(*args))
 
 
