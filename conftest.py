@@ -120,18 +120,18 @@ class Score:
     score: int = 0
     subtests: typing.List[SubtestResult] = dataclasses.field(default_factory=list)
     subtests_fixture: typing.Any = None
-    manual: bool = False
+    is_manual: bool = False
 
     @property
     def final_score(self):
-        if self.manual:
+        if self.is_manual:
             return 0
         else:
             return self.score
 
     @property
     def final_worth(self):
-        if self.manual:
+        if self.is_manual:
             return 0
         else:
             return self.worth
@@ -164,46 +164,75 @@ class Score:
             self.score = self.worth if passed else 0
 
 
+class Scores(typing.List[Score]):
+    def __init__(self, name: str, *args, **kwargs):
+        self.name = name
+        super().__init__(*args, **kwargs)
+
+    @property
+    def score(self):
+        return sum([i.score for i in self])
+
+    @property
+    def final_score(self):
+        return sum([i.final_score for i in self])
+
+    @property
+    def worth(self):
+        return sum([i.worth for i in self])
+
+    @property
+    def final_worth(self):
+        return sum([i.final_worth for i in self])
+
+    @property
+    def is_manual(self):
+        return any([i.is_manual for i in self])
+
+
 ALL_SCORES: typing.Dict[str, Score] = {}
 
 
-def problem_results(name: str, scores: typing.List[Score]) -> dict:
-    score = sum([i.score for i in scores])
-    final_score = sum([i.final_score for i in scores])
+@dataclasses.dataclass
+class GradescopeReport:
+    tests: typing.List[Scores]
 
-    is_manual = any([i.manual for i in scores])
+    def generate(self):
+        report = {
+            "stdout_visibility": "visible",
+            "tests": [self.generate_test(i) for i in self.tests],
+            "output": "Thanks for submitting. Remember that you can re-submit as many times as you like, as long as the assignment is open!",
+        }
+        json_report = json.dumps(report, indent=4)
+        print(json_report, file=sys.stderr)
 
-    max_score = sum([i.worth for i in scores])
-    final_max_score = sum([i.final_worth for i in scores])
+    def generate_test(self, scores=Scores):
+        result = {
+            "name": scores.name,
+            "max_score": scores.final_worth,
+            "score": scores.final_score,
+        }
 
-    result = {"name": name, "max_score": final_max_score, "score": final_score}
+        if scores.is_manual:
+            result[
+                "output"
+            ] = f"Autograded {scores.score}/{scores.worth} pending manual grading"
 
-    if is_manual:
-        result["output"] = f"Autograded {score}/{max_score} pending manual grading"
-
-    return result
+        return result
 
 
 @pytest.fixture(scope="session", autouse=True)
 def aggregate_scores():
     yield
 
-    tests = [
-        problem_results(name, scores)
-        for name, scores in [
-            (name, list(scores))
+    GradescopeReport(
+        tests=[
+            Scores(name, scores)
             for name, scores in itertools.groupby(
                 ALL_SCORES.values(), key=lambda i: i.name
             )
         ]
-    ]
-    report = {
-        "stdout_visibility": "visible",
-        "tests": tests,
-        "output": "Thanks for submitting. Remember that you can re-submit as many times as you like, as long as the assignment is open!",
-    }
-    json_report = json.dumps(report, indent=4)
-    print(json_report, file=sys.stderr)
+    ).generate()
 
 
 @pytest.fixture(autouse=True)
@@ -229,7 +258,7 @@ def weight(name: str, worth: int, manual: bool = False):
         f.score = ALL_SCORES[f.__name__] = Score(
             name=name,
             worth=worth,
-            manual=manual,
+            is_manual=manual,
         )
         return f
 
