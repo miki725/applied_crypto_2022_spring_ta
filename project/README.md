@@ -63,7 +63,8 @@ class:
   a password.  See the following section.
 
 All errors must be output to stderr. You may only write to stdout to
-output JSON when the -j flag is provided.
+output JSON when the -j flag is provided, or when you provide search
+outputs (see below).
 
 ## Reading Passwords
 
@@ -279,8 +280,8 @@ warning to stderr, indicating so (one line per file that fails).
 5. For each file where the password validator did match, perform the
 search operation.
 
-6. For each file that matches, output one line to stderr for each match,
-   indicating the name of the file that matched.
+6. For each file that matches, output one line to stdout for each match,
+   indicating the name of the file that matched, and nothing else.
 
 7. If no files match, you may optionally output an error message to
    stderr, indicating that.
