@@ -287,7 +287,7 @@ class File:
 
         size = self.path.stat().st_size
         if size < 32:
-            error(f"{self.path}: {size} is < 32 bytes")
+            error(f"{self.path}: too small - {size} is < 32 bytes")
             return True
 
         if to_encrypt and self.is_already_encrypted():
