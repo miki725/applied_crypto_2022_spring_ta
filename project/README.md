@@ -5,6 +5,8 @@ May 9th.  NO EXTENSIONS will be granted.
 
 Gradescope submissions will not be immediately available. We will send an announcement when submissions are available.
 
+Additionally, by March 2nd, we will provide a C binary as a reference that you can use to help you make sure to get the functionality right.
+
 ## Overview
 In this project, you will be building a program that:
 
@@ -89,6 +91,8 @@ You will then use counter mode to generate a series of 16 byte values:
 
 While each invocation of your program may need to operate on multiple files (and generate new keys for each file), you will be able to operate on those files in any order.
 
+Note that, if you need to build your own counter mode on top of ECB to get the bytes right, it will be important to handle the "add one" operation properly. You need to handle the carry correct when a byte overflows... it may cascade up.  Expect us to test to make sure you're doing this right.  Also, you will need to treat bytes in Big Endian format when you do this, meaning you are best off operating on a byte-by-byte basis.
+
 ### Important
 
 If (and only if) the -j flag is provided, then you must output to stdout a JSON object containing as keys the filenames you're operating on, and as values, the hex-encoded 32-byte output of PBKDF2 associated with each file.  We will specify for each operation, at which point to output data, if -j is provided.
@@ -98,7 +102,7 @@ You will be implementing a simple, non-maleable encryption scheme using a four-r
 
 For our scheme, we will consider the "left" side to be the first 16 bytes of an input, and the "right" side to be the remaining bytes.
 
-When encrypting, the PRF for rounds 1 and 3 will be CTR mode, where the initial input to CTR-mode is the 16 bytes in the left side.  In these rounds, generate a keystream, and XOR it with the right side.
+When encrypting, the PRF for rounds 1 and 3 will be CTR mode, where the initial input to CTR-mode (the initial counter) is the 16 bytes in the left side.  In these rounds, generate a keystream, and XOR it with the right side.
 
 The PRF for rounds 2 and 4 will be HMAC.  HMAC the right side, and XOR first 16 bytes of the MAC with the left side.
 
@@ -205,7 +209,7 @@ You will only collect search terms for files that are properly UTF-8 encoded. We
 
 ### Important
 
-Figuring out how to break up UTF8 into words might sound challenging, but most languages and libraries that have Unicode capabilities will have a capability to extract words (or at least find word boundaries). Just use that!
+Figuring out how to break up UTF-8 into words might sound challenging, but most languages and libraries that have Unicode capabilities will have a capability to extract words (or at least find word boundaries). Just use that!
 
 Similarly, libraries and languages will have casefolding and normalization capabilities.
 
@@ -259,7 +263,7 @@ When the user specifies decryption, take the following actions:
 
 For each plaintext search term, you will conceptually look through each encrypted file in the local directory (you should not recurse), and output to stderr a success message for any file that matches any of the provided search terms.
 
-Note that you will only need to look through the metadata file.  Do NOT decrypt the file to perform the search operation (we will test to ensure you do not).
+Note that you will only need to look through the metadata file.  Do NOT open and decrypt the file to perform the search operation (we will test to ensure you do not).
 
 For this operation, do the following:
 
