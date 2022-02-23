@@ -17,12 +17,18 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.constant_time import bytes_eq
 
 
+# force everything to go to stdout by default
+stdout = sys.stdout
+stderr = sys.stderr
+sys.stdout = sys.stderr
+
+
 def log(*args):
-    print(*args, file=sys.stdout)
+    print(*args, file=stdout)
 
 
 def error(*args):
-    print(*args, file=sys.stderr)
+    print(*args, file=stderr)
 
 
 def eq(a: bytes, *args: bytes) -> bool:
