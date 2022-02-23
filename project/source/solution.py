@@ -241,7 +241,7 @@ class Text:
     def extract_terms(cls, data: bytes):
         """
         >>> Text.extract_terms("ᾟello cat world\u03681 unimaginatively".encode('utf-8'))
-        ['worldͨ1', 'ᾗello', 'worldͨ1*', 'ᾗello*']
+        ['worl', 'world', 'worldͨ', 'worldͨ1', 'ᾗell', 'ᾗello']
         """
         try:
             text = data.decode("utf-8")
