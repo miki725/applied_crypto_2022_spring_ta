@@ -96,8 +96,6 @@ If (and only if) the -j flag is provided, then you must output to stdout a JSON 
 ## The Feistel Cipher
 You will be implementing a simple, non-maleable encryption scheme using a four-round, unbalanced Feistel Network.  This will allow you to take files of any length, and produce an encrypted file of the exact same length.
 
-If the input is fewer than 32 bytes in length, you should NOT perform any operation.  Instead, you should output an error message indicating the file in question was not encrypted, and continue encrypting any other files.  Note: you should still dump keys for such files if asked.
-
 For our scheme, we will consider the "left" side to be the first 16 bytes of an input, and the "right" side to be the remaining bytes.
 
 When encrypting, the PRF for rounds 1 and 3 will be CTR mode, where the initial input to CTR-mode is the 16 bytes in the left side.  In these rounds, generate a keystream, and XOR it with the right side.
@@ -118,7 +116,7 @@ When encrypting, you will index files, and use HMAC-SHA2-256 with the final deri
 You will only collect search terms for files that are properly UTF-8 encoded. We will do a reasonable, but not perfect, job of breaking a UTF-8 string into words.  This is the approach taken by many regular expression libraries that will split on words:
 
 * You will treat words as contiguous sequences of Unicode letters (character classes Lu, Ll, Lt, Lm, Lo), non-spacing marks (class Mn), decimel digits (Nd) and connector punctuation (Pc).
-  
+
 * Anything else (Punction, Symbols, Separators, and Other characters) can only separate words, not be part of them.
 
 * You will index all words that have 4-12 codepoints, before casefolding and normalization.
@@ -156,11 +154,11 @@ When the user specifies encryption, take the following actions:
 6. Output a metadata file, with the file name as specified above.  The contents of the metadata file should be a single JSON object with the following fields:
 
       - salt: Set to the 16 byte salt last used to encrypt this file. Hex-encode the nonce to make it acceptable to be in a JSON string.
-      
+
       - validator: Set to the 16 byte validator generated from the password/salt combination, hex-encoded.
 
       - mac: Set to the 32 byte MAC output, generated from running HMAC-SHA2-256 with the appropriate round key, over the ciphertext.
-  
+
       - terms: Set to a JSON list with ALL of the encryption search terms, hex encoded.
 
    You must add no other fields to the JSON, and you must not write to any other files on the file system during encryption.

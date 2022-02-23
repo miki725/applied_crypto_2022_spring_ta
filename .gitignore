@@ -4,6 +4,7 @@ __pycache__
 tags
 _*.json
 results/
+test/
 *.zip
 *.log
 */*/ps*
