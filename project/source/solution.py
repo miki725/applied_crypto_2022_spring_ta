@@ -381,13 +381,16 @@ def log_json(files: typing.List[File]):
 def main(args):
     if args.search:
         potential_files = [File(path=i) for i in pathlib.Path(".").iterdir()]
-        files = [i for i in potential_files if i.is_already_encrypted()]
+        encrypted_files = [i for i in potential_files if i.is_already_encrypted()]
 
-        if not files:
+        if not encrypted_files:
             error("no encrypted files found")
             return
 
-        if sum(i.is_validator_bad() for i in files) > 0:
+        files = [i for i in encrypted_files if not i.is_validator_bad()]
+
+        if not files:
+            error("no files to search with matching password")
             return
 
         if args.json:
