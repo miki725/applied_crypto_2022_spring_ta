@@ -42,6 +42,14 @@ def xor(*args: bytes) -> bytes:
     return bytes(functools.reduce(lambda a, b: a ^ b, i) for i in zip(*args))
 
 
+@functools.lru_cache()
+def get_password():
+    if sys.stdin.isatty():
+        return getpass.getpass("password: ").encode("utf-8")
+    else:
+        return sys.stdin.readline().strip().encode("utf-8")
+
+
 def hmac_message(data: bytes, key: bytes, method: str = "sha256"):
     return hmac.new(key, data, method).digest()
 
@@ -262,7 +270,6 @@ class Text:
 @dataclasses.dataclass
 class File:
     path: pathlib.Path
-    password: bytes = b""
 
     _keys: typing.Optional[Keys] = None
     _metadata: typing.Optional[Metadata] = None
@@ -325,9 +332,9 @@ class File:
         )
         return self._keys
 
-    def add_password(self, password: bytes):
-        self.password = password
-        return self
+    @property
+    def password(self):
+        return get_password()
 
     def encrypt(self):
         data = self.path.read_bytes()
@@ -361,17 +368,24 @@ class File:
         return False
 
 
+def log_json(files: typing.List[File]):
+    log(json.dumps({str(i.path): i.keys.master.hex() for i in files}, indent=4))
+
+
 def main(args):
     if args.search:
-        password = get_password()
-
-        potential_files = [
-            File(path=i).add_password(password) for i in pathlib.Path(".").iterdir()
-        ]
+        potential_files = [File(path=i) for i in pathlib.Path(".").iterdir()]
         files = [i for i in potential_files if i.is_already_encrypted()]
+
+        if not files:
+            error("no encrypted files found")
+            return
 
         if sum(i.is_validator_bad() for i in files) > 0:
             return
+
+        if args.json:
+            log_json(files)
 
         if sum(i.search(args.args) for i in files) == 0:
             error(f"{args.args} were not found in any of the files")
@@ -379,18 +393,17 @@ def main(args):
     else:
         files = [File(path=pathlib.Path(i)) for i in args.args]
 
+        # validation pass without requiring password
         if sum(i.has_errors(not args.decrypt) for i in files) > 0:
             return
 
-        password = get_password()
-        for i in files:
-            i.add_password(password)
-
+        # validation pass whicn requires password
+        # separate pass allows to fail early without prompting above without password prompt
         if sum(i.is_validator_bad() for i in files) > 0:
             return
 
         if args.json:
-            log(json.dumps({str(i.path): i.keys.master.hex() for i in files}, indent=4))
+            log_json(files)
 
         if args.decrypt:
             for i in files:
@@ -399,13 +412,6 @@ def main(args):
         else:
             for i in files:
                 i.encrypt()
-
-
-def get_password():
-    if sys.stdin.isatty():
-        return getpass.getpass("password: ").encode("utf-8")
-    else:
-        return sys.stdin.readline().strip().encode("utf-8")
 
 
 if __name__ == "__main__":
