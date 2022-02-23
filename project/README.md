@@ -49,7 +49,7 @@ In order to do this, you will use the following concepts, mostly from class:
 
 - Once command-line arguments are passed, you will prompt the user for a password.  See the following section.
 
-All errors must be output to stderr. You may only write to stdout to output JSON when the -j flag is provided, or when the -s flag is given, and you provide search outputs (see below).
+With the exeception of argument parsing errors, all errors must be output to stderr. Once argument parsing is done, you may only write to stdout to output JSON when the -j flag is provided, or when the -s flag is given, and you provide search outputs (see below).  With argument parsing you may only give error output when the specification for flags in this document is not met, and such errors can go to either stdout or stderr (allowing you to get parsing help from third party libraries).
 
 You may add your own flags if you want; we will ignore them in grading. (For instance, you might consider adding an '-r' flag to support recursive operations).
 
