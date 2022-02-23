@@ -2,7 +2,7 @@ SHELL=bash
 .SECONDARY:
 
 SOURCE_FILES=$(wildcard *.py) $(wildcard Pipfile*) $(wildcard *.sh) run_autograder
-PS=$(wildcard ps*)
+PS=$(wildcard ps*) project
 
 foo:
 	echo $(addsuffix /submission/ps,$(PS))

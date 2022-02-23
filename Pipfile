@@ -10,6 +10,10 @@ pytest-subtests = "*"
 pdbpp = "*"
 dataclasses = "*"
 ptpython = "*"
+cryptography = "*"
+more-itertools = "*"
+types-cryptography = "*"
+regex = "*"
 
 [dev-packages]
 
