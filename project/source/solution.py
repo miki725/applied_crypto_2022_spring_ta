@@ -304,7 +304,7 @@ class File:
         if self.is_already_encrypted() and not eq(
             self.keys.validator, self.metadata.validator
         ):
-            error(f"{self.path}: validator is incorrect")
+            error(f"{self.path}: password does not match")
             return True
 
         return False
