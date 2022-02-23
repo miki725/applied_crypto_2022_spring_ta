@@ -356,7 +356,7 @@ class File:
     def search(self, terms: typing.List[str]):
         mac_terms = Text.mac_terms(terms, self.keys.search_terms)
         if any(i in mac_terms for i in self.metadata.terms):
-            error(f"{self.path}")
+            log(f"{self.path}")
             return True
         return False
 
