@@ -4,16 +4,14 @@ SHELL=bash
 SOURCE_FILES=$(wildcard *.py) $(wildcard Pipfile*) $(wildcard *.sh) run_autograder
 PS=$(wildcard ps*) project
 
-foo:
-	echo $(addsuffix /submission/ps,$(PS))
-
 clean:
 	-rm */*/*.zip
 	-rm */*/*.log
 	-rm */*/_*.json
 	-rm -rf **/__pycache__
 	-rm */*/results/*
-	-rm */submission/ps
+	-rm */submission/ps*
+	-rm */submission/fencrypt
 
 copy-%:
 	cp $(SOURCE_FILES) $*/source/
@@ -26,14 +24,13 @@ copy: $(addprefix copy-,$(PS))
 		> $@
 
 ifeq "$(PASTE)" "true"
-$(shell rm  $(addsuffix /submission/ps,$(PS)) 2> /dev/null)
 %/submission/ps:
-	pbpaste > $@
-	chmod +x $@
+	source $*/source/config.sh && pbpaste > $(dir $@)$${BIN}
+	source $*/source/config.sh && chmod +x $(dir $@)$${BIN}
 else
 %/submission/ps: %/source/solution.py
-	cp $^ $@
-	chmod +x $@
+	source $*/source/config.sh && cp $^ $(dir $@)$${BIN}
+	source $*/source/config.sh && chmod +x $(dir $@)$${BIN}
 endif
 
 %/diff: %/submission/example-input.json %/submission/example-output.json %/submission/ps

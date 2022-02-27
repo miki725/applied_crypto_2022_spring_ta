@@ -6,10 +6,15 @@
 # results/results.json
 #   grade results
 
-SOURCE=./source
-SUBMISSION=./submission
-RESULTS=./results
+SOURCE=$PWD/source
+SUBMISSION=$PWD/submission
+RESULTS=$PWD/results
+CONFIG=$SOURCE/config.sh
 SETUP=$SUBMISSION/setup.sh
+
+if [ -f $CONFIG ]; then
+    source $CONFIG
+fi
 
 ARTIFACTS_JSON=$SOURCE/_artifacts.json
 INPUT_JSON=$SOURCE/_input.json
@@ -18,10 +23,11 @@ REFERENCE_JSON=$SOURCE/_reference.json
 REPORT_JSON=$RESULTS/results.json
 ERRORS=$SOURCE/_errors.log
 
-ARTIFACTS="python3 $SOURCE/artifacts.py"
-INPUT="python3 $SOURCE/input.py"
-SOLUTION="python3 $SOURCE/solution.py"
-PS=${PS:-$SUBMISSION/ps*}
+ARTIFACTS_BIN="python3 $SOURCE/artifacts.py"
+INPUT_BIN="python3 $SOURCE/input.py"
+SOLUTION_BIN="python3 $SOURCE/solution.py"
+BIN=${BIN:-ps*}
+export PS=$SUBMISSION/$BIN
 
 exec 2> $RESULTS/stderr
 
@@ -46,67 +52,82 @@ if [ -f $SETUP ]; then
     )
 fi
 
-# if we use artifacts for grading, then we generate artifacts file
-# otherwise we use input.py to generate input data
-# and shold rely on sample solution below
-if $ARTIFACTS > $ARTIFACTS_JSON; then
-    $INPUT \
-        < $ARTIFACTS_JSON \
-        > $INPUT_JSON
+if [ -z "$NO_INPUT" ]; then
+
+    # if we use artifacts for grading, then we generate artifacts file
+    # otherwise we use input.py to generate input data
+    # and shold rely on sample solution below
+    if $ARTIFACTS_BIN > $ARTIFACTS_JSON; then
+        $INPUT_BIN \
+            < $ARTIFACTS_JSON \
+            > $INPUT_JSON
+    else
+        $INPUT_BIN \
+            > $INPUT_JSON
+    fi
+
+    if [ -f $PS ]; then
+        chmod +x $PS
+    fi
+
+    $PS \
+        < $INPUT_JSON \
+        > $OUTPUT_JSON \
+        2> $ERRORS \
+        || (
+            echo "$BIN exited with an error. autograding cannot grade this submission"
+            echo
+            cat $ERRORS;
+            exit 1
+        ) \
+        || exit 0
+
+    cat $OUTPUT_JSON \
+        | python3 -m json.tool \
+        > /dev/null \
+        || (
+            echo "$BIN produced invalid json output:"
+            echo
+            cat $OUTPUT_JSON
+            exit 1
+        ) \
+        || exit 0
+
+    # solution might not exist
+    # and instead grading might rely on artifacts file
+    $SOLUTION_BIN \
+        < $INPUT_JSON \
+        > $REFERENCE_JSON \
+        || true
+
+    pytest $SOURCE/tests* \
+        --verbose --verbose \
+        --disable-pytest-warnings \
+        --no-header \
+        --capture=no \
+        $PYTEST_FLAGS \
+        2> $REPORT_JSON \
+        || true
+
+    echo
+    echo tests used input json:
+
+    cat $INPUT_JSON | python3 -m json.tool
+
+    echo
+    echo $BIN generated json:
+
+    cat $OUTPUT_JSON | python3 -m json.tool
+
 else
-    $INPUT \
-        > $INPUT_JSON
+
+    pytest $SOURCE/tests* \
+        --verbose --verbose \
+        --disable-pytest-warnings \
+        --no-header \
+        --capture=no \
+        $PYTEST_FLAGS \
+        2> $REPORT_JSON \
+        || true
+
 fi
-
-if [ -f $PS ]; then
-    chmod +x $PS
-fi
-
-$PS \
-    < $INPUT_JSON \
-    > $OUTPUT_JSON \
-    2> $ERRORS \
-    || (
-        echo "$PS exited with an error. autograding cannot grade this submission"
-        echo
-        cat $ERRORS;
-        exit 1
-    ) \
-    || exit 0
-
-cat $OUTPUT_JSON \
-    | python3 -m json.tool \
-    > /dev/null \
-    || (
-        echo "$PS produced invalid json output:"
-        echo
-        cat $OUTPUT_JSON
-        exit 1
-    ) \
-    || exit 0
-
-# solution might not exist
-# and instead grading might rely on artifacts file
-$SOLUTION \
-    < $INPUT_JSON \
-    > $REFERENCE_JSON \
-    || true
-
-pytest $SOURCE/tests* \
-    --verbose --verbose \
-    --disable-pytest-warnings \
-    --no-header \
-    --capture=no \
-    $PYTEST_FLAGS \
-    2> $REPORT_JSON \
-    || true
-
-echo
-echo tests used input json:
-
-cat $INPUT_JSON | python3 -m json.tool
-
-echo
-echo $PS generated json:
-
-cat $OUTPUT_JSON | python3 -m json.tool

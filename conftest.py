@@ -1,3 +1,5 @@
+import tempfile
+import subprocess
 import contextlib
 import dataclasses
 import functools
@@ -6,6 +8,7 @@ import json
 import pathlib
 import sys
 import typing
+import os
 
 import pytest
 
@@ -66,6 +69,39 @@ def output_data():
 @functools.lru_cache(1)
 def reference_data():
     return load_json(REFERENCE, strict=False)
+
+
+@pytest.fixture
+def tempdir():
+    cwd = pathlib.Path.cwd()
+    try:
+        with tempfile.TemporaryDirectory() as t:
+            os.chdir(t)
+            yield pathlib.Path(t)
+    finally:
+        os.chdir(cwd)
+
+
+@dataclasses.dataclass
+class Shell:
+    stdin: typing.Optional[bytes]
+    stdout: bytes
+    stderr: bytes
+    exit_code: int
+
+    def __bool__(self):
+        return not bool(self.exit_code)
+
+
+def shell(cmd: str, stdin: bytes = None):
+    p = subprocess.Popen(
+        cmd.split(),
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    out, err = p.communicate(stdin, timeout=5)
+    return Shell(stdin=stdin, stdout=out, stderr=err, exit_code=p.returncode)
 
 
 @dataclasses.dataclass

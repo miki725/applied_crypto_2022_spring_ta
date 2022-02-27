@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import dataclasses
 import functools
@@ -7,6 +8,7 @@ import hmac
 import itertools
 import json
 import pathlib
+import re
 import secrets
 import sys
 import typing
@@ -17,10 +19,8 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.constant_time import bytes_eq
 
 
-# force everything to go to stdout by default
 stdout = sys.stdout
 stderr = sys.stderr
-sys.stdout = sys.stderr
 
 
 def log(*args):
@@ -86,7 +86,10 @@ class Keys:
     def from_password(cls, password: bytes, salt: bytes = None):
         salt = salt or secrets.token_bytes(16)
         master = hashlib.pbkdf2_hmac(cls.HASH_FUNCTION, password, salt, cls.ITERATIONS)
+        return cls.from_master(master, salt)
 
+    @classmethod
+    def from_master(cls, master: bytes, salt: bytes):
         aes_key, iv = master[:16], master[16:]
         generator = aes_ctr_keystream_generator(aes_key, iv)
 
@@ -192,6 +195,13 @@ class Metadata:
     mac: bytes
     terms: typing.List[bytes]
 
+    def __post_init__(self):
+        assert len(self.salt) == 16
+        assert len(self.validator) == 16
+        assert len(self.mac) == 32
+        for term in self.terms:
+            assert len(term) == 32
+
     def as_json(self):
         return {
             "salt": self.salt.hex(),
@@ -222,51 +232,71 @@ class Text:
         "Lo",
         # marks
         "Mn",
-        "Mc",
-        "Me",
         # numbers
         "Nd",
-        "Nl",
-        "No",
+        # connector punctuation
+        "Pc",
     ]
-    CATEGORIES_RE = regex.compile(
-        "[" + "".join([fr"\p{{{i}}}" for i in CATEGORIES]) + "]+"
-    )
+    CATEGORY_MATCH = "".join([fr"\p{{{i}}}" for i in CATEGORIES])
+    CATEGORIES_RE = regex.compile(f"[{CATEGORY_MATCH}]+")
+    ASCII_RE = re.compile(r"[\w\d]+")
+
+    MIN_CHARS = 4
+    MAX_CHARS = 12
 
     @classmethod
     def normalize_word(cls, word: str):
-        return unicodedata.normalize("NFC", word.lower())
+        return unicodedata.normalize("NFC", word.casefold())
 
     @classmethod
-    def extract_terms(cls, data: bytes):
+    def normalize_words(cls, words: typing.List[str]):
         """
-        >>> Text.extract_terms("ᾟello cat world\u03681 unimaginatively".encode('utf-8'))
-        ['worl', 'world', 'worldͨ', 'worldͨ1', 'ᾗell', 'ᾗello']
+        >>> Text.normalize_words(['Hell*', 'Hello', 'Hello*', 'Hellow', 'worl*', 'world*', 'world1'])
+        ['hell*', 'hello', 'hello*', 'hellow', 'worl*', 'world*', 'world1']
+        >>> Text.normalize_words(['worl*', 'world*', 'worldͨ*', 'worldͨ1', 'ᾟell*', 'ᾟello', 'ᾟello*', 'ᾟellow'])
+        ['worl*', 'world*', 'worldͨ*', 'worldͨ1', 'ἧιell*', 'ἧιello', 'ἧιello*', 'ἧιellow']
+        """
+        return [cls.normalize_word(i) for i in words]
+
+    @classmethod
+    def is_word_searchable(cls, word: str):
+        return cls.MIN_CHARS <= len(word) <= cls.MAX_CHARS
+
+    @classmethod
+    def filter_words(cls, words: typing.List[str]):
+        return [i for i in words if cls.is_word_searchable(i)]
+
+    @classmethod
+    def extract_terms(
+        cls, data: bytes, pattern=CATEGORIES_RE, include_star: bool = True
+    ):
+        """
+        >>> Text.extract_terms("Hello cat: world1! - Hellow unimaginatively".encode('utf-8'))
+        ['Hell*', 'Hello', 'Hello*', 'Hellow', 'worl*', 'world*', 'world1']
+        >>> Text.extract_terms("Hello cat: world1! - Hellow unimaginatively".encode('utf-8'), Text.ASCII_RE)
+        ['Hell*', 'Hello', 'Hello*', 'Hellow', 'worl*', 'world*', 'world1']
+
+        >>> Text.extract_terms("ᾟello cat: world\u03681! - ᾟellow unimaginatively".encode('utf-8'))
+        ['worl*', 'world*', 'worldͨ*', 'worldͨ1', 'ᾟell*', 'ᾟello', 'ᾟello*', 'ᾟellow']
+        >>> Text.extract_terms("ᾟello cat: world\u03681! - ᾟellow unimaginatively".encode('utf-8'), Text.ASCII_RE)
+        ['worl*', 'world', 'ᾟell*', 'ᾟello', 'ᾟello*', 'ᾟellow']
         """
         try:
             text = data.decode("utf-8")
         except UnicodeDecodeError:
             return []
 
-        terms = sorted(
-            set(
-                cls.normalize_word(i)
-                for i in cls.CATEGORIES_RE.findall(text)
-                if len(i) >= 4 and len(i) <= 12
-            )
-        )
+        terms = set(cls.filter_words(pattern.findall(text)))
 
-        terms = list(
-            itertools.chain(
-                *[[term[:i] for i in range(4, len(term) + 1)] for term in terms]
-            )
-        )
+        if include_star:
+            for term in list(terms):
+                terms |= {f"{term[:i]}*" for i in range(4, len(term))}
 
-        return terms
+        return sorted(terms)
 
     @classmethod
     def mac_terms(cls, terms: typing.List[str], key: bytes):
-        return [cls.mac_term(i, key) for i in terms]
+        return sorted([cls.mac_term(i, key) for i in terms])
 
     @classmethod
     def mac_term(cls, data: str, key: bytes):
@@ -275,8 +305,11 @@ class Text:
 
 @dataclasses.dataclass
 class File:
+    METADATA_PREFIX = ".fenc-meta."
+
     path: pathlib.Path
 
+    _password: typing.Optional[bytes] = None
     _keys: typing.Optional[Keys] = None
     _metadata: typing.Optional[Metadata] = None
 
@@ -311,7 +344,7 @@ class File:
 
     @property
     def metadata_path(self):
-        return self.path.with_name(f".fenc-meta.{self.path.name}")
+        return self.path.with_name(f"{self.METADATA_PREFIX}{self.path.name}")
 
     @property
     def metadata(self):
@@ -340,7 +373,7 @@ class File:
 
     @property
     def password(self):
-        return get_password()
+        return self._password or get_password()
 
     def encrypt(self):
         data = self.path.read_bytes()
@@ -349,7 +382,9 @@ class File:
             salt=self.keys.salt,
             validator=self.keys.validator,
             mac=encrypted.mac,
-            terms=Text.mac_terms(Text.extract_terms(data), self.keys.search_terms),
+            terms=Text.mac_terms(
+                Text.normalize_words(Text.extract_terms(data)), self.keys.search_terms
+            ),
         )
         self.metadata_path.write_text(json.dumps(self.metadata.as_json(), indent=4))
         self.path.write_bytes(encrypted.ciphertext)
@@ -367,15 +402,25 @@ class File:
             self.path.write_bytes(decrypted)
 
     def search(self, terms: typing.List[str]):
-        mac_terms = Text.mac_terms(terms, self.keys.search_terms)
+        normalized_terms = Text.normalize_words(terms)
+        mac_terms = Text.mac_terms(normalized_terms, self.keys.search_terms)
         if any(i in mac_terms for i in self.metadata.terms):
             log(f"{self.path}")
             return True
         return False
 
+    @property
+    def debug_json(self):
+        return {str(self.path): self.keys.master.hex()}
+
 
 def log_json(files: typing.List[File]):
-    log(json.dumps({str(i.path): i.keys.master.hex() for i in files}, indent=4))
+    log(
+        json.dumps(
+            functools.reduce(lambda a, b: {**a, **b}, (i.debug_json for i in files)),
+            indent=4,
+        )
+    )
 
 
 def main(args):
@@ -385,13 +430,17 @@ def main(args):
 
         if not encrypted_files:
             error("no encrypted files found")
-            return
+            return 1
 
         files = [i for i in encrypted_files if not i.is_validator_bad()]
 
         if not files:
             error("no files to search with matching password")
-            return
+            return 1
+
+        if not get_password():
+            error("no password provided")
+            return 1
 
         if args.json:
             log_json(files)
@@ -404,12 +453,16 @@ def main(args):
 
         # validation pass without requiring password
         if sum(i.has_errors(not args.decrypt) for i in files) > 0:
-            return
+            return 1
+
+        if not get_password():
+            error("no password provided")
+            return 1
 
         # validation pass whicn requires password
         # separate pass allows to fail early without prompting above without password prompt
         if sum(i.is_validator_bad() for i in files) > 0:
-            return
+            return 1
 
         if args.json:
             log_json(files)
@@ -422,8 +475,13 @@ def main(args):
             for i in files:
                 i.encrypt()
 
+    return 0
+
 
 if __name__ == "__main__":
+    # force everything to go to stdout by default
+    sys.stdout = sys.stderr
+
     parser = argparse.ArgumentParser(description="Encrypt/decrypt/search files")
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
@@ -460,4 +518,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args)
+    sys.exit(main(args))
