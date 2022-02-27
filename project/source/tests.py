@@ -454,6 +454,23 @@ def test_encrypt_then_decrypt():
     assert file.verify_decryption()
 
 
+def test_encrypt_then_search_then_decrypt():
+    file = File().write_words(15, 30)
+    encrypted = Program.encrypt([file], generate_password())
+    assert encrypted
+    assert file.verify_encryption()
+    search = Program.search(
+        [
+            file.written_text.random_unicode_word(),
+        ],
+        file.password,
+    )
+    assert search
+    decrypted = Program.decrypt([file], file.password)
+    assert decrypted
+    assert file.verify_decryption()
+
+
 def test_decrypt_no_debug():
     file = File().write(secrets.token_bytes(32)).encrypt(generate_password())
     result = Program.call(f"-d {file.path}")
