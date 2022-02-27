@@ -3,11 +3,11 @@ import dataclasses
 import functools
 import itertools
 import json
+import os
 import pathlib
 import secrets
 import string
 import typing
-import os
 import unicodedata
 
 import pytest

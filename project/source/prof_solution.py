@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-from Crypto.Cipher import AES
 import argparse
-import hashlib
-import sys
-import os
 import getpass
-import secrets
-import json
+import hashlib
 import hmac
+import json
+import os
 import re
+import secrets
+import sys
 import unicodedata
+
+from Crypto.Cipher import AES
 
 
 def err(msg="", endl="\n"):
