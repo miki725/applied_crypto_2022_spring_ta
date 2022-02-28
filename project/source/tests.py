@@ -345,6 +345,9 @@ class Program(Shell):
 
 
 def test_no_multiple_flags():
+    """
+    ensure that program does not accept multiple program flags at once
+    """
     file = File().write(secrets.token_bytes(32))
     assert not Program.call(f"-e -d -s {file.path}")
     assert not Program.call(f"-e -d {file.path}")
@@ -354,6 +357,9 @@ def test_no_multiple_flags():
 
 @pytest.mark.xfail
 def test_encrypt_no_password():
+    """
+    encrypt should exit >0 when no password is given
+    """
     file = File().write(secrets.token_bytes(32))
     program = Program.encrypt([file])
     assert not program, "must require password"
@@ -361,24 +367,36 @@ def test_encrypt_no_password():
 
 @pytest.mark.xfail
 def test_encrypt_missing_file():
+    """
+    encrypt should exit >0 when file to be encrypted does not exist
+    """
     file = File()
     program = Program.encrypt([file], generate_password())
     assert not program, "should not encrypt non-existing file"
 
 
 def test_encrypt_small():
+    """
+    encrypt should not encrypt small <32byte files
+    """
     file = File().write(secrets.token_bytes(31))
     program = Program.encrypt([file])
     assert not program, "should not encrypt small files"
 
 
 def test_encrypt_no_debug():
+    """
+    encrypt should not print anything to stdout without -j flag
+    """
     file = File().write(secrets.token_bytes(32))
     result = Program.call(f"-e {file.path}")
     assert not result.stdout, "nothing should go to stdout"
 
 
 def test_encrypt_already_encrypted():
+    """
+    encrypt should not encrypt already encrypted files
+    """
     password = generate_password()
     file = File().write(secrets.token_bytes(32)).encrypt(password)
     program = Program.encrypt([file], password)
@@ -386,6 +404,10 @@ def test_encrypt_already_encrypted():
 
 
 def test_encrypt_binary():
+    """
+    encrypt should be able to encrypt binary files
+    this also checks how file was encrypted
+    """
     file = File().write_binary(2 ** 9, 2 ** 11)
     program = Program.encrypt([file], generate_password())
     assert program
@@ -396,6 +418,10 @@ def test_encrypt_binary():
 
 
 def test_encrypt_multiple_files():
+    """
+    encrypt should be able to encrypt multiple files at once
+    each encrypted file is checked of how it was encrypted
+    """
     files = [
         File().write_binary(2 ** 9, 2 ** 11),
         File().write_binary(2 ** 9, 2 ** 11),
@@ -409,6 +435,10 @@ def test_encrypt_multiple_files():
 
 
 def test_encrypt_text():
+    """
+    encrypt should be able to encrypt text files
+    this also checks how file was encrypted
+    """
     file = File().write_words(10, 50)
     program = Program.encrypt([file], generate_password())
     assert program
@@ -420,6 +450,10 @@ def test_encrypt_text():
 
 
 def test_encrypt_text_no_star_terms():
+    """
+    encrypt should find ascii search terms to go in metadata file
+    this test checks that at least all the ascii words were found without * search terms
+    """
     file = File().write_words(10, 50)
     program = Program.encrypt([file], generate_password())
     assert program
@@ -427,6 +461,10 @@ def test_encrypt_text_no_star_terms():
 
 
 def test_encrypt_text_star_terms():
+    """
+    encrypt should find ascii search terms to go in metadata file
+    this test checks that at least all the ascii words were found with some * search terms
+    """
     file = File().write_words(10, 50)
     program = Program.encrypt([file], generate_password())
     assert program
@@ -438,6 +476,9 @@ def test_encrypt_text_star_terms():
 
 @pytest.mark.xfail
 def test_encrypt_text_all_unicode_categories():
+    """
+    encrypt should find all unicode group search terms to go in metadata file along with * search terms
+    """
     file = File().write_words(10, 50)
     program = Program.encrypt([file], generate_password())
     assert program
@@ -445,6 +486,9 @@ def test_encrypt_text_all_unicode_categories():
 
 
 def test_encrypt_then_decrypt():
+    """
+    decrypt should be able to decrypt encrypted file
+    """
     file = File().write_binary(2 ** 9, 2 ** 11)
     encrypted = Program.encrypt([file], generate_password())
     assert encrypted
@@ -455,6 +499,9 @@ def test_encrypt_then_decrypt():
 
 
 def test_encrypt_then_search_then_decrypt():
+    """
+    encrypt, then search, then decrypt all should be able to run on the same file in sequence
+    """
     file = File().write_words(15, 30)
     encrypted = Program.encrypt([file], generate_password())
     assert encrypted
@@ -472,6 +519,9 @@ def test_encrypt_then_search_then_decrypt():
 
 
 def test_decrypt_no_debug():
+    """
+    decrypt should not output anything to stdout without -j flag
+    """
     file = File().write(secrets.token_bytes(32)).encrypt(generate_password())
     result = Program.call(f"-d {file.path}")
     assert not result.stdout, "nothing should go to stdout"
@@ -479,12 +529,18 @@ def test_decrypt_no_debug():
 
 @pytest.mark.xfail
 def test_decrypt_no_password():
+    """
+    decrypt program should exit >0 without given password
+    """
     file = File().write_binary(2 ** 9, 2 ** 11).encrypt(generate_password())
     program = Program.decrypt([file])
     assert not program
 
 
 def test_decrypt_diff_password():
+    """
+    decrypt should exit >0 if decryption password does not match encryption passoword
+    """
     file = File().write_binary(2 ** 9, 2 ** 11).encrypt(generate_password())
     program = Program.decrypt([file], generate_password())
     assert not program
@@ -492,18 +548,28 @@ def test_decrypt_diff_password():
 
 @pytest.mark.xfail
 def test_decrypt_no_file():
+    """
+    decrypt should exit >0 when attempting to decrypt non-existing file
+    """
     file = File()
     program = Program.decrypt([file], generate_password())
     assert not program
 
 
 def test_decrypt_not_encrypted():
+    """
+    decrypt should exit >0 when decrypting non-encrypted file
+    """
     file = File().write_binary(2 ** 9, 2 ** 11)
     program = Program.decrypt([file], generate_password())
     assert not program
 
 
 def test_decrypt():
+    """
+    decrypt should be able to decrypt binary file
+    decrypted file is checked that it matches initial plaintext file
+    """
     file = File().write_binary(2 ** 9, 2 ** 11).encrypt(generate_password())
     program = Program.decrypt([file], file.password)
     assert program
@@ -511,7 +577,25 @@ def test_decrypt():
     assert file.verify_decryption()
 
 
+def test_decrypt_mismatching_mac():
+    """
+    decrypt should not attempt to decrypt files where MAC does not match
+    """
+    file = File().write_binary(2 ** 9, 2 ** 11).encrypt(generate_password())
+    changed_data = file.written_data[:-2] + b"\x00" * 2
+    file.path.write_bytes(changed_data)
+    program = Program.decrypt([file], file.password)
+    assert program
+    assert program.files_in_folder == 2
+    assert file.verify_keys()
+    assert file.path.read_bytes() == changed_data
+
+
 def test_decrypt_multiple_files():
+    """
+    decrypt should be able to decrypt multiple files
+    each decrypted file is checked that it matches initial plaintext file
+    """
     password = generate_password()
     files = [
         File().write_binary(2 ** 9, 2 ** 11).encrypt(password),
@@ -525,6 +609,9 @@ def test_decrypt_multiple_files():
 
 
 def test_decrypt_multiple_files_mismatching_passwords():
+    """
+    decrypt should exit >0 if any of the files to be decrypted do not match password
+    """
     password = generate_password()
     files = [
         File().write_binary(2 ** 9, 2 ** 11).encrypt(password),
@@ -535,6 +622,9 @@ def test_decrypt_multiple_files_mismatching_passwords():
 
 
 def test_decrypt_missing_metadata():
+    """
+    decrypt should exit >0 when metadata file is missing
+    """
     file = File().write_binary(2 ** 9, 2 ** 11).encrypt(generate_password())
     file.metadata_path.unlink()
     program = Program.decrypt([file], file.password)
@@ -542,6 +632,9 @@ def test_decrypt_missing_metadata():
 
 
 def test_decrypt_missing_file():
+    """
+    decrypt should exit >0 when file is missing but metadata file is present
+    """
     file = File().write_binary(2 ** 9, 2 ** 11).encrypt(generate_password())
     file.path.unlink()
     program = Program.decrypt([file], file.password)
@@ -550,12 +643,18 @@ def test_decrypt_missing_file():
 
 @pytest.mark.xfail
 def test_search_no_files():
+    """
+    search should exit >0 when no files are present
+    """
     program = Program.search(["foo"], generate_password())
     assert not program
 
 
 @pytest.mark.xfail
 def test_search_no_password():
+    """
+    search should exit >0 when no password was provided
+    """
     File().write_words(10, 50).encrypt(generate_password())
     program = Program.search(["foo"])
     assert not program
@@ -563,12 +662,18 @@ def test_search_no_password():
 
 @pytest.mark.xfail
 def test_search_no_files_with_same_password():
+    """
+    search should exit >0 when no files with matching password were found
+    """
     File().write_words(50, 100).encrypt(generate_password())
     program = Program.search(["foo"], generate_password())
     assert not program
 
 
 def test_search_different_term():
+    """
+    search should not any files with search term not present in files
+    """
     file = File().write_words(50, 100).encrypt(generate_password())
     program = Program.search(["hello"], file.password)
     assert program
@@ -576,6 +681,9 @@ def test_search_different_term():
 
 
 def test_search():
+    """
+    search should be able to find file by full word present in file
+    """
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
@@ -587,7 +695,44 @@ def test_search():
     assert program.found_files == {file}
 
 
+def test_search_mismatching_validator():
+    """
+    search should validate validator before searching file
+    """
+    file = File().write_words(5, 10).encrypt(generate_password())
+    File().write_words(5, 10).encrypt(file.password)
+    file.metadata.validator = file.metadata.validator[:-2] + b"\x00" * 2
+    file.metadata_path.write_text(json.dumps(file.metadata.as_json()))
+    program = Program.search(
+        [
+            file.written_text.random_ascii_word(),
+        ],
+        file.password,
+    )
+    assert program
+    assert program.found_files == set()
+
+
+def test_search_empty_file():
+    """
+    search should only use metadata file after plaintext is encrypted
+    """
+    file = File().write_words(5, 10).encrypt(generate_password())
+    file.path.write_bytes(b"")
+    program = Program.search(
+        [
+            file.written_text.random_ascii_word(),
+        ],
+        file.password,
+    )
+    assert program
+    assert program.found_files == {file}
+
+
 def test_search_multiple_terms():
+    """
+    search should be able to find file when searching by multiple full words from file
+    """
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
@@ -601,6 +746,9 @@ def test_search_multiple_terms():
 
 
 def test_search_multiple_passwords():
+    """
+    search should be able to find files with search terms even if other files dont match passwords
+    """
     File().write_words(5, 10).encrypt(generate_password())
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
@@ -614,6 +762,9 @@ def test_search_multiple_passwords():
 
 
 def test_search_multiple_files():
+    """
+    search shoulg be able to find multiple files with terms from different files
+    """
     file1 = File().write_words(5, 10).encrypt(generate_password())
     file2 = File().write_words(5, 10).encrypt(file1.password)
     File().write_words(5, 10).encrypt(file1.password)
@@ -632,6 +783,9 @@ def test_search_multiple_files():
 
 @pytest.mark.xfail
 def test_search_unicode():
+    """
+    search should be able to find files by using full unicode search terms
+    """
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
@@ -644,6 +798,11 @@ def test_search_unicode():
 
 
 def test_search_star():
+    """
+    search should be able find file with partial search term
+
+    for example if file contains "building", "build*" should be able to find the file
+    """
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
@@ -657,6 +816,11 @@ def test_search_star():
 
 @pytest.mark.xfail
 def test_search_unicode_star():
+    """
+    search should be able find file with partial search unicode term
+
+    for example if file contains "вітаємо" (hello in Ukranian), "вітаєм*" should be able to find the file
+    """
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [

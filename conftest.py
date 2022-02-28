@@ -84,6 +84,7 @@ def tempdir():
 
 @dataclasses.dataclass
 class Shell:
+    cmd: str
     stdin: typing.Optional[bytes]
     stdout: bytes
     stderr: bytes
@@ -101,7 +102,7 @@ def shell(cmd: str, stdin: bytes = None):
         stderr=subprocess.PIPE,
     )
     out, err = p.communicate(stdin, timeout=5)
-    return Shell(stdin=stdin, stdout=out, stderr=err, exit_code=p.returncode)
+    return Shell(cmd=cmd, stdin=stdin, stdout=out, stderr=err, exit_code=p.returncode)
 
 
 @dataclasses.dataclass
