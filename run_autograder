@@ -52,6 +52,10 @@ if [ -f $SETUP ]; then
     )
 fi
 
+if [ -f $PS ]; then
+    chmod +x $PS
+fi
+
 if [ -z "$NO_INPUT" ]; then
 
     # if we use artifacts for grading, then we generate artifacts file
@@ -64,10 +68,6 @@ if [ -z "$NO_INPUT" ]; then
     else
         $INPUT_BIN \
             > $INPUT_JSON
-    fi
-
-    if [ -f $PS ]; then
-        chmod +x $PS
     fi
 
     $PS \
