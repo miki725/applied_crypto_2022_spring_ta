@@ -29,13 +29,14 @@ ifeq "$(PASTE)" "true"
 	source $*/source/config.sh && chmod +x $(dir $@)$${BIN}
 else
 %/submission/ps: %/source/solution.py
-	source $*/source/config.sh && cp $^ $(dir $@)$${BIN}
-	source $*/source/config.sh && chmod +x $(dir $@)$${BIN}
+	source $*/source/config.sh && cp $^ $*/submission/$${BIN}
+	source $*/source/config.sh && chmod +x $*/submission/$${BIN}
 endif
 
 %/diff: %/submission/example-input.json %/submission/example-output.json %/submission/ps
+	source $*/source/config.sh && \
 	colordiff -u \
-		<(cat $*/submission/example-input.json | ./$*/submission/ps | python -m json.tool) \
+		<(cat $*/submission/example-input.json | $*/submission/$${BIN} | python -m json.tool) \
 		<(cat $*/submission/example-output.json | python -m json.tool)
 
 %/run_autograder: ./run_autograder
