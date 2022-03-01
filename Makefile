@@ -2,7 +2,7 @@ SHELL=bash
 .SECONDARY:
 
 SOURCE_FILES=$(wildcard *.py) $(wildcard Pipfile*) $(wildcard *.sh) run_autograder
-PS=$(wildcard ps*) project
+PS=$(wildcard ps*) $(wildcard project*)
 
 clean:
 	-rm */*/*.zip
@@ -50,5 +50,10 @@ pdb:
 
 %/source/grading.zip: clean copy
 	cd $*/source \
-		&& zip grading.zip * \
+		&& zip grading.zip * -r -x '*/__pycache__/*' -x '*/.pytest_cache/*' \
 		&& zip -sf grading.zip
+
+%/submission/solution.zip: clean copy %/submission/ps
+	cd $*/submission \
+		&& zip solution.zip * -r -x '*/__pycache__/*' -x '*/.pytest_cache/*' \
+		&& zip -sf solution.zip
