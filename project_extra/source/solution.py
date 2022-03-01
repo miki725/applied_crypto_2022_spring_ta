@@ -7,7 +7,7 @@ from project.solution import Feistel, Keys, Text, hmac_message
 
 def problem1(data):
     return Keys.from_password(
-        bytes.fromhex(data["password"]), bytes.fromhex(data["salt"])
+        data["password"].encode(), bytes.fromhex(data["salt"])
     ).master.hex()
 
 
