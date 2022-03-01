@@ -1,6 +1,6 @@
-import functools
 import csv
 import dataclasses
+import functools
 import itertools
 import pathlib
 import secrets
@@ -74,6 +74,10 @@ def generate_password(length: int = 16):
 
 def generate_filename(length: int = 16):
     return "".join(secrets.choice(ALPHABET) for _ in range(length))
+
+
+def random_case(word: str):
+    return "".join(i.upper() if between(0, 1) else i.lower() for i in word)
 
 
 @dataclasses.dataclass

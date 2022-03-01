@@ -1,25 +1,21 @@
-import csv
 import dataclasses
-import functools
-import itertools
 import json
 import os
 import pathlib
 import secrets
-import string
 import typing
-import unicodedata
 
 import pytest
 
 from .conftest import Shell, shell, weight
-from .solution import Feistel, File as FileEncryptor, Keys, Metadata, Text
+from .solution import Feistel, File as FileEncryptor, Keys, Metadata
 from .test_utils import (
     GeneratedText,
-    generate_filename,
-    cache,
     between,
+    cache,
+    generate_filename,
     generate_password,
+    random_case,
 )
 
 
@@ -586,6 +582,22 @@ def test_search():
 
 
 @weight(name="search", worth=1)
+def test_search_case():
+    """
+    search should be able to find file by full word present in file regardless of their case
+    """
+    file = File().write_words(5, 10).encrypt(generate_password())
+    program = Program.search(
+        [
+            random_case(file.written_text.random_ascii_word()),
+        ],
+        file.password,
+    )
+    assert program
+    assert program.found_files == {file}
+
+
+@weight(name="search", worth=1)
 def test_search_mismatching_validator():
     """
     search should validate validator before searching file
@@ -686,6 +698,23 @@ def test_search_unicode():
     program = Program.search(
         [
             file.written_text.random_unicode_word(),
+        ],
+        file.password,
+    )
+    assert program
+    assert program.found_files == {file}
+
+
+@pytest.mark.xfail
+@weight(name="search", worth=1)
+def test_search_unicode_case():
+    """
+    search should be able to find files by using full unicode search terms regardless of their case
+    """
+    file = File().write_words(5, 10).encrypt(generate_password())
+    program = Program.search(
+        [
+            random_case(file.written_text.random_unicode_word()),
         ],
         file.password,
     )
