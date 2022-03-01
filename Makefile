@@ -2,7 +2,7 @@ SHELL=bash
 .SECONDARY:
 
 SOURCE_FILES=$(wildcard *.py) $(wildcard Pipfile*) $(wildcard *.sh) run_autograder
-PS=$(wildcard ps*) project
+PS=$(wildcard ps*) $(wildcard project*)
 
 clean:
 	-rm */*/*.zip
@@ -29,13 +29,14 @@ ifeq "$(PASTE)" "true"
 	source $*/source/config.sh && chmod +x $(dir $@)$${BIN}
 else
 %/submission/ps: %/source/solution.py
-	source $*/source/config.sh && cp $^ $(dir $@)$${BIN}
-	source $*/source/config.sh && chmod +x $(dir $@)$${BIN}
+	source $*/source/config.sh && cp $^ $*/submission/$${BIN}
+	source $*/source/config.sh && chmod +x $*/submission/$${BIN}
 endif
 
 %/diff: %/submission/example-input.json %/submission/example-output.json %/submission/ps
+	source $*/source/config.sh && \
 	colordiff -u \
-		<(cat $*/submission/example-input.json | ./$*/submission/ps | python -m json.tool) \
+		<(cat $*/submission/example-input.json | $*/submission/$${BIN} | python -m json.tool) \
 		<(cat $*/submission/example-output.json | python -m json.tool)
 
 %/run_autograder: ./run_autograder
@@ -50,5 +51,10 @@ pdb:
 
 %/source/grading.zip: clean copy
 	cd $*/source \
-		&& zip grading.zip * \
+		&& zip grading.zip * -r -x '*/__pycache__/*' -x '*/.pytest_cache/*' \
 		&& zip -sf grading.zip
+
+%/submission/solution.zip: clean copy %/submission/ps
+	cd $*/submission \
+		&& zip solution.zip * -r -x '*/__pycache__/*' -x '*/.pytest_cache/*' \
+		&& zip -sf solution.zip
