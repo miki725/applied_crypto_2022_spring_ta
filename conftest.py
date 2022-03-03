@@ -153,6 +153,7 @@ class SubtestResult:
 @dataclasses.dataclass
 class Score:
     name: str
+    test_name: str
     worth: int
     score: int = 0
     subtests: typing.List[SubtestResult] = dataclasses.field(default_factory=list)
@@ -254,6 +255,11 @@ class GradescopeReport:
             result[
                 "output"
             ] = f"Autograded {scores.score}/{scores.worth} pending manual grading"
+        elif len(scores) > 1:
+            result["output"] = "\n".join(
+                f"{i.test_name}: {i.score}/{i.worth}"
+                for i in sorted(scores, key=lambda i: i.test_name)
+            )
 
         return result
 
@@ -262,11 +268,12 @@ class GradescopeReport:
 def aggregate_scores():
     yield
 
+    key = lambda i: i.name
     GradescopeReport(
         tests=[
             Scores(name, scores)
             for name, scores in itertools.groupby(
-                ALL_SCORES.values(), key=lambda i: i.name
+                sorted(ALL_SCORES.values(), key=key), key=key
             )
         ]
     ).generate()
@@ -294,6 +301,7 @@ def weight(name: str, worth: int, manual: bool = False):
     def wrapper(f):
         f.score = ALL_SCORES[f.__name__] = Score(
             name=name,
+            test_name=f.__name__,
             worth=worth,
             is_manual=manual,
         )

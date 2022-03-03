@@ -1,25 +1,21 @@
-import csv
 import dataclasses
-import functools
-import itertools
 import json
 import os
 import pathlib
 import secrets
-import string
 import typing
-import unicodedata
 
 import pytest
 
 from .conftest import Shell, shell, weight
-from .solution import Feistel, File as FileEncryptor, Keys, Metadata, Text
+from .solution import Feistel, File as FileEncryptor, Keys, Metadata
 from .test_utils import (
     GeneratedText,
-    generate_filename,
-    cache,
     between,
+    cache,
+    generate_filename,
     generate_password,
+    random_case,
 )
 
 
@@ -204,7 +200,8 @@ class Program(Shell):
         return self.files[0]
 
 
-@weight(name="general", worth=1)
+@pytest.mark.xfail
+@weight(name="cli_extra_credit", worth=2)
 def test_no_multiple_flags():
     """
     ensure that program does not accept multiple program flags at once
@@ -217,7 +214,7 @@ def test_no_multiple_flags():
 
 
 @pytest.mark.xfail
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt_extra_credit", worth=2)
 def test_encrypt_no_password():
     """
     encrypt should exit >0 when no password is given
@@ -228,7 +225,7 @@ def test_encrypt_no_password():
 
 
 @pytest.mark.xfail
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt_extra_credit", worth=2)
 def test_encrypt_missing_file():
     """
     encrypt should exit >0 when file to be encrypted does not exist
@@ -238,7 +235,7 @@ def test_encrypt_missing_file():
     assert not program, "should not encrypt non-existing file"
 
 
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt", worth=2)
 def test_encrypt_small():
     """
     encrypt should not encrypt small <32byte files
@@ -248,7 +245,7 @@ def test_encrypt_small():
     assert not program, "should not encrypt small files"
 
 
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt", worth=2)
 def test_encrypt_no_debug():
     """
     encrypt should not print anything to stdout without -j flag
@@ -258,7 +255,7 @@ def test_encrypt_no_debug():
     assert not result.stdout, "nothing should go to stdout"
 
 
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt", worth=2)
 def test_encrypt_already_encrypted():
     """
     encrypt should not encrypt already encrypted files
@@ -269,7 +266,7 @@ def test_encrypt_already_encrypted():
     assert not program, "should not encrypt already encrypted file"
 
 
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt", worth=10)
 def test_encrypt_binary():
     """
     encrypt should be able to encrypt binary files
@@ -284,7 +281,7 @@ def test_encrypt_binary():
     assert file.verify_encryption()
 
 
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt", worth=5)
 def test_encrypt_multiple_files():
     """
     encrypt should be able to encrypt multiple files at once
@@ -302,7 +299,7 @@ def test_encrypt_multiple_files():
         assert file.verify_encryption()
 
 
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt", worth=10)
 def test_encrypt_text():
     """
     encrypt should be able to encrypt text files
@@ -318,7 +315,7 @@ def test_encrypt_text():
     assert file.verify_encryption()
 
 
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt", worth=2)
 def test_encrypt_text_no_star_terms():
     """
     encrypt should find ascii search terms to go in metadata file
@@ -330,7 +327,7 @@ def test_encrypt_text_no_star_terms():
     assert len(file.metadata.terms) >= len(file.written_text.ascii_words)
 
 
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt", worth=2)
 def test_encrypt_text_star_terms():
     """
     encrypt should find ascii search terms to go in metadata file
@@ -346,7 +343,7 @@ def test_encrypt_text_star_terms():
 
 
 @pytest.mark.xfail
-@weight(name="encrypt", worth=1)
+@weight(name="encrypt_extra_credit", worth=2)
 def test_encrypt_text_all_unicode_categories():
     """
     encrypt should find all unicode group search terms to go in metadata file along with * search terms
@@ -357,7 +354,7 @@ def test_encrypt_text_all_unicode_categories():
     assert len(file.metadata.terms) == len(file.written_text.matched_unicode_terms)
 
 
-@weight(name="integration", worth=1)
+@weight(name="integration", worth=5)
 def test_encrypt_then_decrypt():
     """
     decrypt should be able to decrypt encrypted file
@@ -371,7 +368,7 @@ def test_encrypt_then_decrypt():
     assert file.verify_decryption()
 
 
-@weight(name="integration", worth=1)
+@weight(name="integration", worth=5)
 def test_encrypt_then_search_then_decrypt():
     """
     encrypt, then search, then decrypt all should be able to run on the same file in sequence
@@ -392,7 +389,7 @@ def test_encrypt_then_search_then_decrypt():
     assert file.verify_decryption()
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=2)
 def test_decrypt_no_debug():
     """
     decrypt should not output anything to stdout without -j flag
@@ -403,7 +400,7 @@ def test_decrypt_no_debug():
 
 
 @pytest.mark.xfail
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt_extra_credit", worth=2)
 def test_decrypt_no_password():
     """
     decrypt program should exit >0 without given password
@@ -413,7 +410,7 @@ def test_decrypt_no_password():
     assert not program
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=2)
 def test_decrypt_diff_password():
     """
     decrypt should exit >0 if decryption password does not match encryption passoword
@@ -423,8 +420,19 @@ def test_decrypt_diff_password():
     assert not program
 
 
+@weight(name="decrypt_extra_credit", worth=2)
+def test_decrypt_small():
+    """
+    decrypt should not attempt to decrypt small <32byte files
+    """
+    file = File().write_binary(2 ** 9, 2 ** 11).encrypt(generate_password())
+    file.path.write_bytes(secrets.token_bytes(31))
+    program = Program.decrypt([file], generate_password())
+    assert not program
+
+
 @pytest.mark.xfail
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt_extra_credit", worth=2)
 def test_decrypt_no_file():
     """
     decrypt should exit >0 when attempting to decrypt non-existing file
@@ -434,7 +442,7 @@ def test_decrypt_no_file():
     assert not program
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=5)
 def test_decrypt_not_encrypted():
     """
     decrypt should exit >0 when decrypting non-encrypted file
@@ -444,7 +452,7 @@ def test_decrypt_not_encrypted():
     assert not program
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=10)
 def test_decrypt():
     """
     decrypt should be able to decrypt binary file
@@ -457,7 +465,7 @@ def test_decrypt():
     assert file.verify_decryption()
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=5)
 def test_decrypt_mismatching_mac():
     """
     decrypt should not attempt to decrypt files where MAC does not match
@@ -472,7 +480,7 @@ def test_decrypt_mismatching_mac():
     assert file.path.read_bytes() == changed_data
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=5)
 def test_decrypt_multiple_files():
     """
     decrypt should be able to decrypt multiple files
@@ -490,7 +498,7 @@ def test_decrypt_multiple_files():
         assert file.verify_decryption()
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=2)
 def test_decrypt_multiple_files_mismatching_passwords():
     """
     decrypt should exit >0 if any of the files to be decrypted do not match password
@@ -504,7 +512,7 @@ def test_decrypt_multiple_files_mismatching_passwords():
     assert not program
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=2)
 def test_decrypt_missing_metadata():
     """
     decrypt should exit >0 when metadata file is missing
@@ -515,7 +523,7 @@ def test_decrypt_missing_metadata():
     assert not program
 
 
-@weight(name="decrypt", worth=1)
+@weight(name="decrypt", worth=2)
 def test_decrypt_missing_file():
     """
     decrypt should exit >0 when file is missing but metadata file is present
@@ -527,7 +535,7 @@ def test_decrypt_missing_file():
 
 
 @pytest.mark.xfail
-@weight(name="search", worth=1)
+@weight(name="search_extra_credit", worth=1)
 def test_search_no_files():
     """
     search should exit >0 when no files are present
@@ -537,7 +545,7 @@ def test_search_no_files():
 
 
 @pytest.mark.xfail
-@weight(name="search", worth=1)
+@weight(name="search_extra_credit", worth=1)
 def test_search_no_password():
     """
     search should exit >0 when no password was provided
@@ -548,7 +556,7 @@ def test_search_no_password():
 
 
 @pytest.mark.xfail
-@weight(name="search", worth=1)
+@weight(name="search_extra_credit", worth=1)
 def test_search_no_files_with_same_password():
     """
     search should exit >0 when no files with matching password were found
@@ -558,7 +566,7 @@ def test_search_no_files_with_same_password():
     assert not program
 
 
-@weight(name="search", worth=1)
+@weight(name="search", worth=2)
 def test_search_different_term():
     """
     search should not any files with search term not present in files
@@ -569,7 +577,7 @@ def test_search_different_term():
     assert program.found_files == set()
 
 
-@weight(name="search", worth=1)
+@weight(name="search", worth=2)
 def test_search():
     """
     search should be able to find file by full word present in file
@@ -585,7 +593,23 @@ def test_search():
     assert program.found_files == {file}
 
 
-@weight(name="search", worth=1)
+@weight(name="search", worth=2)
+def test_search_case():
+    """
+    search should be able to find file by full word present in file regardless of their case
+    """
+    file = File().write_words(5, 10).encrypt(generate_password())
+    program = Program.search(
+        [
+            random_case(file.written_text.random_ascii_word()),
+        ],
+        file.password,
+    )
+    assert program
+    assert program.found_files == {file}
+
+
+@weight(name="search", worth=2)
 def test_search_mismatching_validator():
     """
     search should validate validator before searching file
@@ -604,7 +628,7 @@ def test_search_mismatching_validator():
     assert program.found_files == set()
 
 
-@weight(name="search", worth=1)
+@weight(name="search", worth=2)
 def test_search_empty_file():
     """
     search should only use metadata file after plaintext is encrypted
@@ -621,7 +645,7 @@ def test_search_empty_file():
     assert program.found_files == {file}
 
 
-@weight(name="search", worth=1)
+@weight(name="search", worth=2)
 def test_search_multiple_terms():
     """
     search should be able to find file when searching by multiple full words from file
@@ -638,7 +662,7 @@ def test_search_multiple_terms():
     assert program.found_files == {file}
 
 
-@weight(name="search", worth=1)
+@weight(name="search", worth=4)
 def test_search_multiple_passwords():
     """
     search should be able to find files with search terms even if other files dont match passwords
@@ -655,7 +679,7 @@ def test_search_multiple_passwords():
     assert program.found_files == {file}
 
 
-@weight(name="search", worth=1)
+@weight(name="search", worth=2)
 def test_search_multiple_files():
     """
     search shoulg be able to find multiple files with terms from different files
@@ -677,7 +701,7 @@ def test_search_multiple_files():
 
 
 @pytest.mark.xfail
-@weight(name="search", worth=1)
+@weight(name="search_extra_credit", worth=1)
 def test_search_unicode():
     """
     search should be able to find files by using full unicode search terms
@@ -693,7 +717,24 @@ def test_search_unicode():
     assert program.found_files == {file}
 
 
-@weight(name="search", worth=1)
+@pytest.mark.xfail
+@weight(name="search_extra_credit", worth=1)
+def test_search_unicode_case():
+    """
+    search should be able to find files by using full unicode search terms regardless of their case
+    """
+    file = File().write_words(5, 10).encrypt(generate_password())
+    program = Program.search(
+        [
+            random_case(file.written_text.random_unicode_word()),
+        ],
+        file.password,
+    )
+    assert program
+    assert program.found_files == {file}
+
+
+@weight(name="search", worth=2)
 def test_search_star():
     """
     search should be able find file with partial search term
@@ -712,7 +753,7 @@ def test_search_star():
 
 
 @pytest.mark.xfail
-@weight(name="search", worth=1)
+@weight(name="search_extra_credit", worth=1)
 def test_search_unicode_star():
     """
     search should be able find file with partial search unicode term
