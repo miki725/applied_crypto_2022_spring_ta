@@ -262,11 +262,12 @@ class GradescopeReport:
 def aggregate_scores():
     yield
 
+    key = lambda i: i.name
     GradescopeReport(
         tests=[
             Scores(name, scores)
             for name, scores in itertools.groupby(
-                ALL_SCORES.values(), key=lambda i: i.name
+                sorted(ALL_SCORES.values(), key=key), key=key
             )
         ]
     ).generate()
