@@ -65,10 +65,7 @@ class Trade:
 
     def does_it_match_any_of(self, other: typing.List["Trade"]) -> bool:
         return any(
-            [
-                self.does_it_match(operation=i.operation, company=i.company)
-                for i in other
-            ]
+            self.does_it_match(operation=i.operation, company=i.company) for i in other
         )
 
     def swap_operation(self):
@@ -76,7 +73,7 @@ class Trade:
         return self
 
     def swap_shares(self, old: int, new: int):
-        template = lambda i: b"\x00" * 8 + "{: <8}".format(i).encode()
+        template = lambda i: b"\x00" * 8 + f"{i: <8}".encode()
         self.all_bytes = xor(self.all_bytes, xor(template(old), template(new)))
         return self
 
@@ -117,14 +114,12 @@ class Problem1:
     @property
     def best_replacement_trade(self) -> Trade:
         return next(
-            (
-                i.ciphertext
-                for i in sorted(
-                    self.possible_replacement_trades_pairs,
-                    key=lambda i: i.plaintext.shares,
-                    reverse=True,
-                )
-            ),
+            i.ciphertext
+            for i in sorted(
+                self.possible_replacement_trades_pairs,
+                key=lambda i: i.plaintext.shares,
+                reverse=True,
+            )
         )
 
     @property
@@ -148,7 +143,7 @@ class Problem1:
             (
                 (
                     self.best_replacement_trade.all_bytes
-                    if trade.does_it_match_any_of([i for i in self.matching_trades])
+                    if trade.does_it_match_any_of(self.matching_trades)
                     else trade.all_bytes
                 ).hex()
                 for trade in Trade.from_str(trades)
@@ -184,9 +179,9 @@ class Problem3:
 
     @property
     def replaced_trades(self):
-        return b"".join(
-            i.swap_operation().all_bytes for i in Trade.from_str(self.todays_ct)
-        ).hex()
+        return "".join(
+            i.swap_operation().all_bytes.hex() for i in Trade.from_str(self.todays_ct)
+        )
 
 
 def problem3(data: Problem3):
