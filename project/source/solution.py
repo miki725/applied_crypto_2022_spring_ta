@@ -386,8 +386,8 @@ class File:
                 Text.normalize_words(Text.extract_terms(data)), self.keys.search_terms
             ),
         )
-        self.metadata_path.write_text(json.dumps(self.metadata.as_json(), indent=4))
         self.path.write_bytes(encrypted.ciphertext)
+        self.metadata_path.write_text(json.dumps(self.metadata.as_json(), indent=4))
 
     def decrypt(self):
         data = self.path.read_bytes()
