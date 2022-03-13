@@ -61,6 +61,25 @@ def hmac_message(data: bytes, key: bytes, method: str = "sha256"):
 
 
 def aes_ctr_keystream_generator(key: bytes, iv: bytes, length: int = None):
+    """
+    >>> key = bytes(range(16))
+    >>> nonce = b"\\xff" * 16
+
+    # reference
+    >>> stream = next(aes_ctr_keystream_generator(key, nonce, 32))
+    >>> stream.hex()
+    '3c441f32ce07822364d7a2990e50bb13c6a13b37878f5b826f4f8162a1c8d879'
+
+    # manual nonce incremeent
+    # checks if openssl increments all of 16 bytes of the nonce-counter
+    >>> block_one = Cipher(algorithm=algorithms.AES(key), mode=modes.CBC(b"\\xff" * 16)).encryptor().update(b"\\x00" * 16)
+    >>> block_two = Cipher(algorithm=algorithms.AES(key), mode=modes.CBC(b"\\x00" * 16)).encryptor().update(b"\\x00" * 16)
+    >>> (block_one + block_two).hex()
+    '3c441f32ce07822364d7a2990e50bb13c6a13b37878f5b826f4f8162a1c8d879'
+
+    >>> block_one + block_two == stream
+    True
+    """
     aes = algorithms.AES(key)
     encryptor = Cipher(algorithm=aes, mode=modes.CTR(iv)).encryptor()
     # since in CTR more, each block is XORed with plaintext, if plaintext is
