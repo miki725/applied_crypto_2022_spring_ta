@@ -200,7 +200,6 @@ class Program(Shell):
         return self.files[0]
 
 
-@pytest.mark.xfail
 @weight(name="cli_extra_credit", worth=2)
 def test_no_multiple_flags():
     """
@@ -213,7 +212,6 @@ def test_no_multiple_flags():
     assert not Program.call(f"-e -s {file.path}")
 
 
-@pytest.mark.xfail
 @weight(name="encrypt_extra_credit", worth=2)
 def test_encrypt_no_password():
     """
@@ -224,7 +222,6 @@ def test_encrypt_no_password():
     assert not program, "must require password"
 
 
-@pytest.mark.xfail
 @weight(name="encrypt_extra_credit", worth=2)
 def test_encrypt_missing_file():
     """
@@ -342,7 +339,6 @@ def test_encrypt_text_star_terms():
     )
 
 
-@pytest.mark.xfail
 @weight(name="encrypt_extra_credit", worth=2)
 def test_encrypt_text_all_unicode_categories():
     """
@@ -399,7 +395,6 @@ def test_decrypt_no_debug():
     assert not result.stdout, "nothing should go to stdout"
 
 
-@pytest.mark.xfail
 @weight(name="decrypt_extra_credit", worth=2)
 def test_decrypt_no_password():
     """
@@ -431,7 +426,6 @@ def test_decrypt_small():
     assert not program
 
 
-@pytest.mark.xfail
 @weight(name="decrypt_extra_credit", worth=2)
 def test_decrypt_no_file():
     """
@@ -534,7 +528,6 @@ def test_decrypt_missing_file():
     assert not program
 
 
-@pytest.mark.xfail
 @weight(name="search_extra_credit", worth=1)
 def test_search_no_files():
     """
@@ -544,7 +537,6 @@ def test_search_no_files():
     assert not program
 
 
-@pytest.mark.xfail
 @weight(name="search_extra_credit", worth=1)
 def test_search_no_password():
     """
@@ -555,7 +547,6 @@ def test_search_no_password():
     assert not program
 
 
-@pytest.mark.xfail
 @weight(name="search_extra_credit", worth=1)
 def test_search_no_files_with_same_password():
     """
@@ -700,7 +691,6 @@ def test_search_multiple_files():
     assert program.found_files == {file1, file2}
 
 
-@pytest.mark.xfail
 @weight(name="search_extra_credit", worth=1)
 def test_search_unicode():
     """
@@ -717,7 +707,6 @@ def test_search_unicode():
     assert program.found_files == {file}
 
 
-@pytest.mark.xfail
 @weight(name="search_extra_credit", worth=1)
 def test_search_unicode_case():
     """
@@ -752,7 +741,6 @@ def test_search_star():
     assert program.found_files == {file}
 
 
-@pytest.mark.xfail
 @weight(name="search_extra_credit", worth=1)
 def test_search_unicode_star():
     """
