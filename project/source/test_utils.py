@@ -90,10 +90,10 @@ class GeneratedText:
         return hash(self.text)
 
     def random_unicode_word(self):
-        return secrets.choice(Text.filter_words(self.unicode_words))
+        return secrets.choice(list(Text.filter_words(self.unicode_words)))
 
     def random_ascii_word(self):
-        return secrets.choice(Text.filter_words(self.ascii_words))
+        return secrets.choice(list(Text.filter_words(self.ascii_words)))
 
     @property
     @cache

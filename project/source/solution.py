@@ -268,22 +268,22 @@ class Text:
         return unicodedata.normalize("NFC", word.casefold())
 
     @classmethod
-    def normalize_words(cls, words: typing.List[str]):
+    def normalize_words(cls, words: typing.Iterable[str]):
         """
         >>> Text.normalize_words(['Hell*', 'Hello', 'Hello*', 'Hellow', 'worl*', 'world*', 'world1'])
         ['hell*', 'hello', 'hello*', 'hellow', 'worl*', 'world*', 'world1']
         >>> Text.normalize_words(['worl*', 'world*', 'worldͨ*', 'worldͨ1', 'ᾟell*', 'ᾟello', 'ᾟello*', 'ᾟellow'])
         ['worl*', 'world*', 'worldͨ*', 'worldͨ1', 'ἧιell*', 'ἧιello', 'ἧιello*', 'ἧιellow']
         """
-        return [cls.normalize_word(i) for i in words]
+        return sorted({cls.normalize_word(i) for i in words})
 
     @classmethod
     def is_word_searchable(cls, word: str):
         return cls.MIN_CHARS <= len(word) <= cls.MAX_CHARS
 
     @classmethod
-    def filter_words(cls, words: typing.List[str]):
-        return [i for i in words if cls.is_word_searchable(i)]
+    def filter_words(cls, words: typing.Iterable[str]):
+        return {i for i in words if cls.is_word_searchable(i)}
 
     @classmethod
     def extract_terms(
@@ -305,7 +305,7 @@ class Text:
         except UnicodeDecodeError:
             return []
 
-        terms = set(cls.filter_words(pattern.findall(text)))
+        terms = cls.filter_words(pattern.findall(text))
 
         if include_star:
             for term in list(terms):
@@ -314,7 +314,7 @@ class Text:
         return sorted(terms)
 
     @classmethod
-    def mac_terms(cls, terms: typing.List[str], key: bytes):
+    def mac_terms(cls, terms: typing.Iterable[str], key: bytes):
         return sorted([cls.mac_term(i, key) for i in terms])
 
     @classmethod
