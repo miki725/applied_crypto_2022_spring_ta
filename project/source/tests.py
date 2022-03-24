@@ -2,6 +2,7 @@ import dataclasses
 import json
 import os
 import pathlib
+import re
 import secrets
 import typing
 
@@ -77,8 +78,19 @@ class File:
 
     @property
     @cache
+    def stdout_debug_keys(self):
+        match = re.search(rb"\{[^\}]*\}", self.stdout, re.MULTILINE)
+        assert match, (
+            f"Did not find master json keys in stdout. "
+            f"Ensure -j prints master keys to stdout\n"
+            f"{self.stdout!r}"
+        )
+        return json.loads(match.group())
+
+    @property
+    @cache
     def master_key(self):
-        return bytes.fromhex(json.loads(self.stdout)[str(self.path)])
+        return bytes.fromhex(self.stdout_debug_keys[str(self.path)])
 
     @property
     @cache
