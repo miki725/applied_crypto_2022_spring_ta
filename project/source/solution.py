@@ -278,12 +278,19 @@ class Text:
         return sorted({cls.normalize_word(i) for i in words})
 
     @classmethod
-    def is_word_searchable(cls, word: str):
-        return cls.MIN_CHARS <= len(word) <= cls.MAX_CHARS
+    def is_word_searchable(
+        cls, word: str, min_length: int = MIN_CHARS, max_length: int = MAX_CHARS
+    ):
+        return min_length <= len(word) <= max_length
 
     @classmethod
-    def filter_words(cls, words: typing.Iterable[str]):
-        return {i for i in words if cls.is_word_searchable(i)}
+    def filter_words(
+        cls,
+        words: typing.Iterable[str],
+        min_length: int = MIN_CHARS,
+        max_length: int = MAX_CHARS,
+    ):
+        return {i for i in words if cls.is_word_searchable(i, min_length, max_length)}
 
     @classmethod
     def extract_terms(
@@ -397,13 +404,13 @@ class File:
     def encrypt(self):
         data = self.path.read_bytes()
         encrypted = Feistel(keys=self.keys).encrypt(data)
+        terms = Text.extract_terms(data)
+        normalized_terms = Text.normalize_words(terms)
         self.metadata = Metadata(
             salt=self.keys.salt,
             validator=self.keys.validator,
             mac=encrypted.mac,
-            terms=Text.mac_terms(
-                Text.normalize_words(Text.extract_terms(data)), self.keys.search_terms
-            ),
+            terms=Text.mac_terms(normalized_terms, self.keys.search_terms),
         )
         self.path.write_bytes(encrypted.ciphertext)
         self.metadata_path.write_text(json.dumps(self.metadata.as_json(), indent=4))

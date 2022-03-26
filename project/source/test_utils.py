@@ -3,6 +3,7 @@ import dataclasses
 import functools
 import itertools
 import pathlib
+import random
 import secrets
 import string
 import typing
@@ -13,7 +14,9 @@ from .solution import Text
 
 ALPHABET = string.ascii_letters + string.digits
 UNICODE_ALPHABET = ""
-PUNCTUATION = string.punctuation
+PUNCTUATION = [
+    i for i in string.punctuation if unicodedata.category(i) not in Text.CATEGORIES
+]
 WHITESPACE = string.whitespace
 
 
@@ -76,6 +79,11 @@ def generate_filename(length: int = 16):
     return "".join(secrets.choice(ALPHABET) for _ in range(length))
 
 
+def shuffle(data: typing.List[str]):
+    random.shuffle(data)
+    return data
+
+
 def random_case(word: str):
     return "".join(i.upper() if between(0, 1) else i.lower() for i in word)
 
@@ -89,11 +97,22 @@ class GeneratedText:
     def __hash__(self):
         return hash(self.text)
 
-    def random_unicode_word(self):
-        return secrets.choice(list(Text.filter_words(self.unicode_words)))
+    @classmethod
+    def random_word_from(
+        cls,
+        words: typing.List[str],
+        min_length: int = Text.MIN_CHARS,
+    ):
+        return secrets.choice(list(Text.filter_words(words, min_length)))
 
-    def random_ascii_word(self):
-        return secrets.choice(list(Text.filter_words(self.ascii_words)))
+    @classmethod
+    def random_star_term_from(
+        cls,
+        words: typing.List[str],
+        truncate: int = 3,
+    ):
+        length = between(Text.MIN_CHARS + truncate, Text.MAX_CHARS)
+        return cls.random_word_from(words, length)[: length - truncate] + "*"
 
     @property
     @cache
@@ -138,20 +157,30 @@ class GeneratedText:
 
     @classmethod
     def generate(cls, min_words: int, max_words: int, with_unicode: bool = True):
-        unicode_words = (
+        unicode_words = shuffle(
             [
                 cls.generate_word(Text.MIN_CHARS, Text.MAX_CHARS, with_unicode=True)
                 for _ in range(between(min_words, max_words))
             ]
+            + [
+                cls.generate_word(i, i, with_unicode=True)
+                for i in range(Text.MIN_CHARS, Text.MAX_CHARS + 1)
+            ]
             if with_unicode
             else []
         )
-        ascii_words = [
-            cls.generate_word(Text.MIN_CHARS, Text.MAX_CHARS, with_unicode=False)
-            for _ in range(between(min_words, max_words))
-        ]
+        ascii_words = shuffle(
+            [
+                cls.generate_word(Text.MIN_CHARS, Text.MAX_CHARS, with_unicode=False)
+                for _ in range(between(min_words, max_words))
+            ]
+            + [
+                cls.generate_word(i, i, with_unicode=False)
+                for i in range(Text.MIN_CHARS, Text.MAX_CHARS + 1)
+            ]
+        )
         text = ""
-        for word in ascii_words + unicode_words:
+        for word in shuffle(ascii_words + unicode_words):
             text += cls.add_punctuation(word)
             text += cls.generate_whitespace()
             if not between(0, 50):

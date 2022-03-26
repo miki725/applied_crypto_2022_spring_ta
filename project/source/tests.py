@@ -387,7 +387,7 @@ def test_encrypt_then_search_then_decrypt():
     assert file.verify_encryption()
     search = Program.search(
         [
-            file.written_text.random_unicode_word(),
+            file.written_text.random_word_from(file.written_text.unicode_words),
         ],
         file.password,
     )
@@ -588,7 +588,7 @@ def test_search():
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
-            file.written_text.random_ascii_word(),
+            file.written_text.random_word_from(file.written_text.ascii_words),
         ],
         file.password,
     )
@@ -604,7 +604,9 @@ def test_search_case():
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
-            random_case(file.written_text.random_ascii_word()),
+            random_case(
+                file.written_text.random_word_from(file.written_text.ascii_words)
+            ),
         ],
         file.password,
     )
@@ -623,7 +625,7 @@ def test_search_mismatching_validator():
     file.metadata_path.write_text(json.dumps(file.metadata.as_json()))
     program = Program.search(
         [
-            file.written_text.random_ascii_word(),
+            file.written_text.random_word_from(file.written_text.ascii_words),
         ],
         file.password,
     )
@@ -640,7 +642,7 @@ def test_search_empty_file():
     file.path.write_bytes(b"")
     program = Program.search(
         [
-            file.written_text.random_ascii_word(),
+            file.written_text.random_word_from(file.written_text.ascii_words),
         ],
         file.password,
     )
@@ -656,8 +658,8 @@ def test_search_multiple_terms():
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
-            file.written_text.random_ascii_word(),
-            file.written_text.random_ascii_word(),
+            file.written_text.random_word_from(file.written_text.ascii_words),
+            file.written_text.random_word_from(file.written_text.ascii_words),
         ],
         file.password,
     )
@@ -674,7 +676,7 @@ def test_search_multiple_passwords():
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
-            file.written_text.random_ascii_word(),
+            file.written_text.random_word_from(file.written_text.ascii_words),
         ],
         file.password,
     )
@@ -694,8 +696,8 @@ def test_search_multiple_files():
     File().write_words(5, 10).encrypt(file1.password)
     program = Program.search(
         [
-            file1.written_text.random_ascii_word(),
-            file2.written_text.random_ascii_word(),
+            file1.written_text.random_word_from(file1.written_text.ascii_words),
+            file2.written_text.random_word_from(file2.written_text.ascii_words),
         ],
         file1.password,
     )
@@ -711,7 +713,7 @@ def test_search_unicode():
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
-            file.written_text.random_unicode_word(),
+            file.written_text.random_word_from(file.written_text.unicode_words),
         ],
         file.password,
     )
@@ -727,7 +729,9 @@ def test_search_unicode_case():
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
-            random_case(file.written_text.random_unicode_word()),
+            random_case(
+                file.written_text.random_word_from(file.written_text.unicode_words)
+            ),
         ],
         file.password,
     )
@@ -745,7 +749,7 @@ def test_search_star():
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
-            file.written_text.random_ascii_word()[:-1] + "*",
+            file.written_text.random_star_term_from(file.written_text.ascii_words),
         ],
         file.password,
     )
@@ -763,7 +767,7 @@ def test_search_unicode_star():
     file = File().write_words(5, 10).encrypt(generate_password())
     program = Program.search(
         [
-            file.written_text.random_unicode_word()[:-1] + "*",
+            file.written_text.random_star_term_from(file.written_text.unicode_words),
         ],
         file.password,
     )
