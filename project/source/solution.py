@@ -258,7 +258,7 @@ class Text:
     ]
     CATEGORY_MATCH = "".join([fr"\p{{{i}}}" for i in CATEGORIES])
     CATEGORIES_RE = regex.compile(f"[{CATEGORY_MATCH}]+")
-    ASCII_RE = re.compile(r"[\w\d]+")
+    ASCII_RE = re.compile(r"[\w\d_]+")
 
     MIN_CHARS = 4
     MAX_CHARS = 12
