@@ -1,5 +1,7 @@
 import json
+import random
 import secrets
+import typing
 from dataclasses import asdict
 
 from solution import RSA, is_prime_naive
@@ -26,13 +28,30 @@ def random_rsa():
 ALL_PRIMES = [i for i in range(5, 256) if is_prime_naive(i)]
 
 
+def shuffle(data: typing.List[int]):
+    random.shuffle(data)
+    return data
+
+
 if __name__ == "__main__":
     for_encryption = random_rsa()
     for_decryption = random_rsa()
     print(
         json.dumps(
             {
-                "problem 1": {"nums": [between(1, 256) for _ in range(between(5, 10))]},
+                "problem 1": {
+                    "nums": sorted(
+                        set(
+                            shuffle(
+                                [between(1, 256) for _ in range(between(5, 10))]
+                                + [
+                                    secrets.choice(ALL_PRIMES)
+                                    for _ in range(between(5, 10))
+                                ]
+                            )
+                        )
+                    )
+                },
                 "problem 2": asdict(random_rsa()),
                 "problem 3": asdict(random_rsa()),
                 "problem 4": {
