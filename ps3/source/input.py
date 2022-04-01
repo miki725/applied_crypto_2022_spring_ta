@@ -2,7 +2,6 @@ import json
 import random
 import secrets
 import typing
-from dataclasses import asdict
 
 from solution import RSA, is_prime_naive
 
@@ -23,6 +22,13 @@ def random_rsa():
     while p == q:
         q = random_prime(7, 255)
     return RSA(p=p, q=q)
+
+
+def asdict(data: RSA):
+    return {
+        "p": data.p,
+        "q": data.q,
+    }
 
 
 ALL_PRIMES = [i for i in range(5, 256) if is_prime_naive(i)]
