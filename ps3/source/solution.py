@@ -161,10 +161,14 @@ class RSA:
         return multicative_inverse(self.e, self.l)
 
     def encrypt(self, x):
-        return x ** self.e % self.n
+        y = (x ** self.e) % self.n
+        assert x == (y ** self.d) % self.n
+        return y
 
     def decrypt(self, y):
-        return y ** self.d % self.n
+        x = (y ** self.d) % self.n
+        assert y == (x ** self.e) % self.n
+        return x
 
 
 @dataclass
