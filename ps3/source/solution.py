@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-import functools
 import json
 import math
 import sys
 import typing
-from dataclasses import dataclass
-
-
-cache = typing.cast(typing.Callable, lambda f: functools.lru_cache()(f))
+from dataclasses import dataclass, field
 
 
 def is_prime_naive(x: int) -> bool:
@@ -132,6 +128,12 @@ def choose_e(l: int) -> int:
 class RSA:
     p: int
     q: int
+    n: int = field(init=False)
+    l: int = field(init=False)
+    phi: int = field(init=False)
+    order_l: bool = field(default=True, repr=False)
+    e: int = field(init=False)
+    d: int = field(init=False)
 
     def __hash__(self):
         return hash(self.p * self.q)
@@ -139,33 +141,15 @@ class RSA:
     def __post_init__(self):
         assert is_prime_naive(self.p)
         assert is_prime_naive(self.q)
+        self.derive_components()
 
-    @property
-    @cache
-    def n(self):
-        return self.p * self.q
-
-    @property
-    @cache
-    def l(self):
-        return lcm(self.p - 1, self.q - 1)
-
-    @property
-    @cache
-    def phi(self):
-        return (self.p - 1) * (self.q - 1)
-
-    order = l
-
-    @property
-    @cache
-    def e(self):
-        return choose_e(self.order)
-
-    @property
-    @cache
-    def d(self):
-        return multicative_inverse(self.e, self.order)
+    def derive_components(self):
+        self.n = self.p * self.q
+        self.phi = (self.p - 1) * (self.q - 1)
+        self.l = lcm(self.p - 1, self.q - 1)
+        order = self.l if self.order_l else self.phi
+        self.e = choose_e(order)
+        self.d = multicative_inverse(self.e, order)
 
     def encrypt(self, x):
         y = (x ** self.e) % self.n
