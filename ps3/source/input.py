@@ -36,6 +36,7 @@ def shuffle(data: typing.List[int]):
 if __name__ == "__main__":
     for_encryption = random_rsa()
     for_decryption = random_rsa()
+    to_decrypt = for_decryption.encrypt(between(10, for_decryption.l - 1))
     print(
         json.dumps(
             {
@@ -60,7 +61,7 @@ if __name__ == "__main__":
                     "n": for_encryption.n,
                 },
                 "problem 5": {
-                    "y": between(10, for_encryption.l - 1),
+                    "y": to_decrypt,
                     **asdict(for_decryption),
                 },
             },

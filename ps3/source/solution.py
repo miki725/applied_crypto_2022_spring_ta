@@ -152,22 +152,29 @@ class RSA:
 
     @property
     @cache
+    def phi(self):
+        return (self.p - 1) * (self.q - 1)
+
+    order = l
+
+    @property
+    @cache
     def e(self):
-        return choose_e(self.l)
+        return choose_e(self.order)
 
     @property
     @cache
     def d(self):
-        return multicative_inverse(self.e, self.l)
+        return multicative_inverse(self.e, self.order)
 
     def encrypt(self, x):
         y = (x ** self.e) % self.n
-        assert x == (y ** self.d) % self.n
+        assert x == (y ** self.d) % self.n, (self, x)
         return y
 
     def decrypt(self, y):
         x = (y ** self.d) % self.n
-        assert y == (x ** self.e) % self.n
+        assert y == (x ** self.e) % self.n, (self, y)
         return x
 
 
