@@ -94,14 +94,14 @@ class Shell:
         return not bool(self.exit_code)
 
 
-def shell(cmd: str, stdin: bytes = None):
+def shell(cmd: str, stdin: bytes = None, timeout: int = 10):
     p = subprocess.Popen(
         cmd.split(),
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    out, err = p.communicate(stdin, timeout=5)
+    out, err = p.communicate(stdin, timeout=timeout)
     return Shell(cmd=cmd, stdin=stdin, stdout=out, stderr=err, exit_code=p.returncode)
 
 

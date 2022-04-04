@@ -275,7 +275,21 @@ def test_encrypt_already_encrypted():
     assert not program, "should not encrypt already encrypted file"
 
 
-@weight(name="encrypt", worth=10)
+@weight(name="encrypt", worth=5)
+def test_encrypt_ctr():
+    """
+    encrypt should correctly use CTR mode on large files
+    """
+    file = File().write_binary(1 * 2 ** 20, 3 * 2 ** 20)
+    program = Program.encrypt([file], generate_password())
+    assert program
+    assert program.files_in_folder == 2
+    assert file.metadata.terms == []
+    assert file.verify_keys()
+    assert file.verify_encryption()
+
+
+@weight(name="encrypt", worth=5)
 def test_encrypt_binary():
     """
     encrypt should be able to encrypt binary files
@@ -295,17 +309,16 @@ def test_encrypt_multiple_files():
     """
     encrypt should be able to encrypt multiple files at once
     each encrypted file is checked of how it was encrypted
+    also all encrypted files should use unique encryption key
     """
-    files = [
-        File().write_binary(2 ** 9, 2 ** 11),
-        File().write_binary(2 ** 9, 2 ** 11),
-    ]
+    files = [File().write_binary(2 ** 9, 2 ** 11) for _ in range(between(10, 15))]
     program = Program.encrypt(files, generate_password())
     assert program
-    assert program.files_in_folder == 4
+    assert program.files_in_folder == len(files) * 2
     for file in files:
         assert file.verify_keys()
         assert file.verify_encryption()
+    assert len({file.master_key for file in files}) == len(files)
 
 
 @weight(name="encrypt", worth=10)
