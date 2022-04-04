@@ -94,7 +94,7 @@ class Shell:
         return not bool(self.exit_code)
 
 
-def shell(cmd: str, stdin: bytes = None, timeout: int = 30):
+def shell(cmd: str, stdin: bytes = None, timeout: int = 60):
     p = subprocess.Popen(
         cmd.split(),
         stdin=subprocess.PIPE,
