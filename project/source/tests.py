@@ -157,16 +157,21 @@ class Program(Shell):
     found_files: typing.Set[File] = dataclasses.field(default_factory=set)
 
     @classmethod
-    def call(cls, args: str, password: bytes = None):
+    def call(cls, args: str, password: bytes = None, timeout: int = None):
         return shell(
             cmd=f"{PS} {args}",
             stdin=password,
+            timeout=timeout,
         )
 
     @classmethod
-    def encrypt(cls, files: typing.List[File], password: bytes = None):
+    def encrypt(
+        cls, files: typing.List[File], password: bytes = None, timeout: int = None
+    ):
         result = cls.call(
-            f"-j -e {' '.join(str(i.path) for i in files)}", password=password
+            f"-j -e {' '.join(str(i.path) for i in files)}",
+            password=password,
+            timeout=timeout,
         )
         return cls(
             files=[
@@ -281,7 +286,7 @@ def test_encrypt_ctr():
     encrypt should correctly use CTR mode on large files
     """
     file = File().write_binary(1 * 2 ** 20, 3 * 2 ** 20)
-    program = Program.encrypt([file], generate_password())
+    program = Program.encrypt([file], generate_password(), timeout=180)
     assert program
     assert program.files_in_folder == 2
     assert file.metadata.terms == []
