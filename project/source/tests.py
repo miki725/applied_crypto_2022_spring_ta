@@ -38,6 +38,8 @@ class File:
     password: typing.Optional[bytes] = dataclasses.field(
         init=False, repr=False, default=b""
     )
+    written_size: int = dataclasses.field(init=False)
+    written_data: bytes = dataclasses.field(init=False, repr=False)
     written_text: GeneratedText = dataclasses.field(init=False, repr=False)
 
     def __hash__(self):
