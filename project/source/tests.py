@@ -116,6 +116,7 @@ class File:
         self.written_data = data
         self.path.write_bytes(data)
         self.written_size = len(data)
+        assert self.written_size == self.size
         return self
 
     def write_binary(self, min_bytes: int, max_bytes: int):
@@ -288,7 +289,7 @@ def test_encrypt_ctr():
     encrypt should correctly use CTR mode on large files
     """
     file = File().write_binary(1 * 2 ** 20, 3 * 2 ** 20)
-    program = Program.encrypt([file], generate_password(), timeout=180)
+    program = Program.encrypt([file], generate_password(), timeout=300)
     assert program
     assert program.files_in_folder == 2
     assert file.metadata.terms == []
