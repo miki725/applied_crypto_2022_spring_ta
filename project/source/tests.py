@@ -293,7 +293,7 @@ def test_encrypt_ctr():
     file = File().write_binary(1 * 2 ** 20, 3 * 2 ** 20)
     program = Program.encrypt([file], generate_password(), timeout=300)
     assert program
-    assert program.files_in_folder == 2
+    assert program.files_in_folder == 2, program
     assert file.metadata.terms == []
     assert file.verify_keys()
     assert file.verify_encryption()
@@ -308,7 +308,7 @@ def test_encrypt_binary():
     file = File().write_binary(2 ** 9, 2 ** 11)
     program = Program.encrypt([file], generate_password())
     assert program
-    assert program.files_in_folder == 2
+    assert program.files_in_folder == 2, program
     assert file.metadata.terms == []
     assert file.verify_keys()
     assert file.verify_encryption()
@@ -324,11 +324,11 @@ def test_encrypt_multiple_files():
     files = [File().write_binary(2 ** 9, 2 ** 11) for _ in range(between(10, 15))]
     program = Program.encrypt(files, generate_password())
     assert program
-    assert program.files_in_folder == len(files) * 2
+    assert program.files_in_folder == len(files) * 2, program
     for file in files:
         assert file.verify_keys()
         assert file.verify_encryption()
-    assert len({file.master_key for file in files}) == len(files)
+    assert len({file.master_key for file in files}) == len(files), program
 
 
 @weight(name="encrypt", worth=10)
@@ -340,9 +340,9 @@ def test_encrypt_text():
     file = File().write_words(10, 50)
     program = Program.encrypt([file], generate_password())
     assert program
-    assert program.files_in_folder == 2
+    assert program.files_in_folder == 2, program
     assert file.metadata_path.exists()
-    assert len(file.metadata.terms) > 0
+    assert len(file.metadata.terms) > 0, program
     assert file.verify_keys()
     assert file.verify_encryption()
 
@@ -356,7 +356,7 @@ def test_encrypt_text_no_star_terms():
     file = File().write_words(10, 50)
     program = Program.encrypt([file], generate_password())
     assert program
-    assert len(file.metadata.terms) >= len(file.written_text.ascii_words)
+    assert len(file.metadata.terms) >= len(file.written_text.ascii_words), program
 
 
 @weight(name="encrypt", worth=2)
@@ -371,7 +371,7 @@ def test_encrypt_text_star_terms():
     assert len(file.metadata.terms) >= min(
         len(file.written_text.matched_ascii_terms),
         len(file.written_text.matched_unicode_terms),
-    )
+    ), program
 
 
 @weight(name="encrypt_extra_credit", worth=2)
@@ -382,7 +382,9 @@ def test_encrypt_text_all_unicode_categories():
     file = File().write_words(10, 50)
     program = Program.encrypt([file], generate_password())
     assert program
-    assert len(file.metadata.terms) == len(file.written_text.matched_unicode_terms)
+    assert len(file.metadata.terms) == len(
+        file.written_text.matched_unicode_terms
+    ), program
 
 
 @weight(name="integration", worth=5)
@@ -490,7 +492,7 @@ def test_decrypt():
     file = File().write_binary(2 ** 9, 2 ** 11).encrypt(generate_password())
     program = Program.decrypt([file], file.password)
     assert program
-    assert program.files_in_folder == 1
+    assert program.files_in_folder == 1, program
     assert file.verify_decryption()
 
 
@@ -504,7 +506,7 @@ def test_decrypt_mismatching_mac():
     file.path.write_bytes(changed_data)
     program = Program.decrypt([file], file.password)
     assert program
-    assert program.files_in_folder == 2
+    assert program.files_in_folder == 2, program
     assert file.verify_keys()
     assert file.path.read_bytes() == changed_data
 
@@ -522,7 +524,7 @@ def test_decrypt_multiple_files():
     ]
     program = Program.decrypt(files, password)
     assert program
-    assert program.files_in_folder == 2
+    assert program.files_in_folder == 2, program
     for file in files:
         assert file.verify_decryption()
 
