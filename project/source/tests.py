@@ -38,7 +38,7 @@ class File:
     password: typing.Optional[bytes] = dataclasses.field(
         init=False, repr=False, default=b""
     )
-    written_size: int = dataclasses.field(init=False)
+    written_size: int = dataclasses.field(init=False, default=0)
     written_data: bytes = dataclasses.field(init=False, repr=False)
     written_text: GeneratedText = dataclasses.field(init=False, repr=False)
 
@@ -92,7 +92,9 @@ class File:
     @property
     @cache
     def master_key(self):
-        return bytes.fromhex(self.stdout_debug_keys[str(self.path)])
+        key = bytes.fromhex(self.stdout_debug_keys[str(self.path)])
+        assert len(key) == 32
+        return key
 
     @property
     @cache
@@ -598,7 +600,7 @@ def test_search_different_term():
     file = File().write_words(50, 100).encrypt(generate_password())
     program = Program.search(["hello"], file.password)
     assert program
-    assert program.found_files == set()
+    assert program.found_files == set(), program
 
 
 @weight(name="search", worth=2)
@@ -614,7 +616,7 @@ def test_search():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
 
 
 @weight(name="search", worth=2)
@@ -632,7 +634,7 @@ def test_search_case():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
 
 
 @weight(name="search", worth=2)
@@ -651,7 +653,7 @@ def test_search_mismatching_validator():
         file.password,
     )
     assert program
-    assert program.found_files == set()
+    assert program.found_files == set(), program
 
 
 @weight(name="search", worth=2)
@@ -668,7 +670,7 @@ def test_search_empty_file():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
 
 
 @weight(name="search", worth=2)
@@ -685,7 +687,7 @@ def test_search_multiple_terms():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
 
 
 @weight(name="search", worth=4)
@@ -702,7 +704,7 @@ def test_search_multiple_passwords():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
 
 
 @weight(name="search", worth=2)
@@ -723,7 +725,7 @@ def test_search_multiple_files():
         file1.password,
     )
     assert program
-    assert program.found_files == {file1, file2}
+    assert program.found_files == {file1, file2}, program
 
 
 @weight(name="search_extra_credit", worth=1)
@@ -739,7 +741,7 @@ def test_search_unicode():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
 
 
 @weight(name="search_extra_credit", worth=1)
@@ -757,7 +759,7 @@ def test_search_unicode_case():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
 
 
 @weight(name="search", worth=2)
@@ -775,7 +777,7 @@ def test_search_star():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
 
 
 @weight(name="search_extra_credit", worth=1)
@@ -793,4 +795,4 @@ def test_search_unicode_star():
         file.password,
     )
     assert program
-    assert program.found_files == {file}
+    assert program.found_files == {file}, program
