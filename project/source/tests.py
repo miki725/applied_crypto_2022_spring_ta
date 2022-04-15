@@ -309,8 +309,8 @@ def test_encrypt_ctr():
     assert program
     assert program.files_in_folder == 2, program
     assert file.metadata.terms == []
-    assert file.verify_keys()
-    assert file.verify_encryption()
+    assert file.verify_keys(), program
+    assert file.verify_encryption(), program
 
 
 @weight(name="encrypt", worth=5)
@@ -324,8 +324,8 @@ def test_encrypt_binary():
     assert program
     assert program.files_in_folder == 2, program
     assert file.metadata.terms == []
-    assert file.verify_keys()
-    assert file.verify_encryption()
+    assert file.verify_keys(), program
+    assert file.verify_encryption(), program
 
 
 @weight(name="encrypt", worth=5)
@@ -340,8 +340,8 @@ def test_encrypt_multiple_files():
     assert program
     assert program.files_in_folder == len(files) * 2, program
     for file in files:
-        assert file.verify_keys()
-        assert file.verify_encryption()
+        assert file.verify_keys(), program
+        assert file.verify_encryption(), program
     assert len({file.master_key for file in files}) == len(files), program
 
 
@@ -357,8 +357,8 @@ def test_encrypt_text():
     assert program.files_in_folder == 2, program
     assert file.metadata_path.exists()
     assert len(file.metadata.terms) > 0, program
-    assert file.verify_keys()
-    assert file.verify_encryption()
+    assert file.verify_keys(), program
+    assert file.verify_encryption(), program
 
 
 @weight(name="encrypt", worth=2)
@@ -409,7 +409,7 @@ def test_encrypt_then_decrypt():
     file = File().write_binary(2 ** 9, 2 ** 11)
     encrypted = Program.encrypt([file], generate_password())
     assert encrypted
-    assert file.verify_encryption()
+    assert file.verify_encryption(), encrypted
     decrypted = Program.decrypt([file], file.password)
     assert decrypted
     assert file.verify_decryption()
@@ -423,7 +423,7 @@ def test_encrypt_then_search_then_decrypt():
     file = File().write_words(15, 30)
     encrypted = Program.encrypt([file], generate_password())
     assert encrypted
-    assert file.verify_encryption()
+    assert file.verify_encryption(), encrypted
     search = Program.search(
         [
             file.written_text.random_word_from(file.written_text.unicode_words),
@@ -433,7 +433,7 @@ def test_encrypt_then_search_then_decrypt():
     assert search
     decrypted = Program.decrypt([file], file.password)
     assert decrypted
-    assert file.verify_decryption()
+    assert file.verify_decryption(), decrypted
 
 
 @weight(name="decrypt", worth=2)
@@ -507,7 +507,7 @@ def test_decrypt():
     program = Program.decrypt([file], file.password)
     assert program
     assert program.files_in_folder == 1, program
-    assert file.verify_decryption()
+    assert file.verify_decryption(), program
 
 
 @weight(name="decrypt", worth=5)
@@ -540,7 +540,7 @@ def test_decrypt_multiple_files():
     assert program
     assert program.files_in_folder == 2, program
     for file in files:
-        assert file.verify_decryption()
+        assert file.verify_decryption(), program
 
 
 @weight(name="decrypt", worth=2)
