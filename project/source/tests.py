@@ -112,6 +112,11 @@ class File:
         return Keys.from_password(self.password or b"", self.metadata.salt)
 
     @property
+    @cache
+    def derived_feistel(self):
+        return Feistel(self.derived_keys)
+
+    @property
     def size(self):
         return self.path.stat().st_size
 
@@ -138,6 +143,7 @@ class File:
         file.encrypt()
         self.password = password
         self.stdout = json.dumps(file.debug_json).encode()
+        assert self.derived_feistel
         return self
 
     def verify_encryption(self):
@@ -152,7 +158,7 @@ class File:
 
     def verify_decryption(self):
         assert self.size == self.written_size
-        assert self.feistel.mac(self.data) == self.feistel.mac(
+        assert self.derived_feistel.mac(self.data) == self.derived_feistel.mac(
             self.written_data
         ), "mac of decrypted file does not match original data mac meading decryption is incorrect"
         assert not self.metadata_path.exists()
