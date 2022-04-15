@@ -28,9 +28,14 @@ ifeq "$(PASTE)" "true"
 	source $*/source/config.sh && pbpaste > $(dir $@)$${BIN}
 	source $*/source/config.sh && chmod +x $(dir $@)$${BIN}
 else
+ifeq "$(NOOP)" "true"
+%/submission/ps:
+	true
+else
 %/submission/ps: %/source/solution.py
 	source $*/source/config.sh && cp $^ $*/submission/$${BIN}
 	source $*/source/config.sh && chmod +x $*/submission/$${BIN}
+endif
 endif
 
 %/diff: %/submission/example-input.json %/submission/example-output.json %/submission/ps

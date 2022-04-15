@@ -218,13 +218,16 @@ class Feistel:
 
         return data
 
+    def mac(self, data: bytes):
+        return hmac_message(data, self.keys.mac)
+
     def encrypt(self, data: bytes):
         ciphertext = self.encrypt_or_decrypt(data)
-        mac = hmac_message(ciphertext, self.keys.mac)
+        mac = self.mac(ciphertext)
         return WithMAC(ciphertext=ciphertext, mac=mac)
 
     def decrypt(self, with_mac: WithMAC):
-        mac = hmac_message(with_mac.ciphertext, self.keys.mac)
+        mac = self.mac(with_mac.ciphertext)
         if not eq(mac, with_mac.mac):
             raise ValueError("invalid mac")
         return self.encrypt_or_decrypt(with_mac.ciphertext, decrypt=True)

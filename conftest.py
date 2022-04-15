@@ -1,5 +1,6 @@
 import contextlib
 import dataclasses
+import datetime
 import functools
 import itertools
 import json
@@ -85,6 +86,7 @@ def tempdir():
 @dataclasses.dataclass
 class Shell:
     cmd: str
+    execution_time: datetime.timedelta
     stdin: typing.Optional[bytes]
     stdout: bytes
     stderr: bytes
@@ -95,6 +97,7 @@ class Shell:
 
 
 def shell(cmd: str, stdin: bytes = None, timeout: int = 10):
+    before = datetime.datetime.now()
     p = subprocess.Popen(
         cmd.split(),
         stdin=subprocess.PIPE,
@@ -102,7 +105,15 @@ def shell(cmd: str, stdin: bytes = None, timeout: int = 10):
         stderr=subprocess.PIPE,
     )
     out, err = p.communicate(stdin, timeout=timeout)
-    return Shell(cmd=cmd, stdin=stdin, stdout=out, stderr=err, exit_code=p.returncode)
+    after = datetime.datetime.now()
+    return Shell(
+        cmd=cmd,
+        execution_time=after - before,
+        stdin=stdin,
+        stdout=out,
+        stderr=err,
+        exit_code=p.returncode,
+    )
 
 
 @dataclasses.dataclass

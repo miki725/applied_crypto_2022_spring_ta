@@ -103,6 +103,11 @@ class File:
 
     @property
     @cache
+    def feistel(self):
+        return Feistel(self.keys)
+
+    @property
+    @cache
     def derived_keys(self):
         return Keys.from_password(self.password or b"", self.metadata.salt)
 
@@ -136,17 +141,20 @@ class File:
         return self
 
     def verify_encryption(self):
-        encrypted = Feistel(self.keys).encrypt(self.written_data)
+        encrypted = self.feistel.encrypt(self.written_data)
         assert self.size == self.written_size
-        assert self.data != self.written_data
-        assert self.data == encrypted.ciphertext
+        assert (
+            self.feistel.mac(self.data) == encrypted.mac
+        ), "encrypted file mac does not match meaning file was incorrectly encrypted"
         assert self.metadata_path.exists()
         assert self.metadata.mac == encrypted.mac
         return True
 
     def verify_decryption(self):
         assert self.size == self.written_size
-        assert self.data == self.written_data
+        assert self.feistel.mac(self.data) == self.feistel.mac(
+            self.written_data
+        ), "mac of decrypted file does not match original data mac meading decryption is incorrect"
         assert not self.metadata_path.exists()
         return True
 
