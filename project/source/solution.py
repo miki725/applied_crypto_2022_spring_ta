@@ -14,6 +14,7 @@ import sys
 import typing
 import unicodedata
 
+import more_itertools
 import regex
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.constant_time import bytes_eq
@@ -44,8 +45,33 @@ def eq(a: bytes, *args: bytes) -> bool:
     return compared == len(args)
 
 
-def xor(*args: bytes) -> bytes:
-    return bytes(functools.reduce(lambda a, b: a ^ b, i) for i in zip(*args))
+def xor(*args: typing.Union[bytes, typing.Iterable[bytes]]) -> bytes:
+    """
+    >>> xor(b'hello', b'world').hex()
+    '1f0a1e000b'
+    >>> xor(b'hello', b'world', b'hello') # note it has >2 parameters
+    b'world'
+    >>> xor(xor(b'hello', b'world'), b'hello') # equivalent to above but longer :D
+    b'world'
+
+    >>> xor(b'hello', [b'world']).hex()
+    '1f0a1e000b'
+
+    >>> def g(i: bytes):
+    ...     while True:
+    ...         yield i
+
+    >>> xor(b'hello', g(b'world')).hex()
+    '1f0a1e000b'
+    >>> xor(b'hellothere', b'worldthere', g(b'hello'))
+    b'worldhello'
+    """
+    return bytes(
+        functools.reduce(lambda a, b: a ^ b, i)
+        for i in zip(
+            *[more_itertools.flatten(more_itertools.collapse(i)) for i in args]
+        )
+    )
 
 
 @functools.lru_cache()
@@ -60,14 +86,14 @@ def hmac_message(data: bytes, key: bytes, method: str = "sha256"):
     return hmac.new(key, data, method).digest()
 
 
-def aes_ctr_keystream_generator(key: bytes, iv: bytes, length: int = None):
+def aes_ctr_keystream_generator(key: bytes, iv: bytes):
     """
     >>> key = bytes(range(16))
     >>> nonce = b"\\xff" * 16
 
     # reference
-    >>> stream = next(aes_ctr_keystream_generator(key, nonce, 32))
-    >>> stream.hex()
+    >>> stream = aes_ctr_keystream_generator(key, nonce)
+    >>> (next(stream) + next(stream)).hex()
     '3c441f32ce07822364d7a2990e50bb13c6a13b37878f5b826f4f8162a1c8d879'
 
     # manual nonce incremeent
@@ -76,15 +102,12 @@ def aes_ctr_keystream_generator(key: bytes, iv: bytes, length: int = None):
     >>> block_two = Cipher(algorithm=algorithms.AES(key), mode=modes.CBC(b"\\x00" * 16)).encryptor().update(b"\\x00" * 16)
     >>> (block_one + block_two).hex()
     '3c441f32ce07822364d7a2990e50bb13c6a13b37878f5b826f4f8162a1c8d879'
-
-    >>> block_one + block_two == stream
-    True
     """
     aes = algorithms.AES(key)
     encryptor = Cipher(algorithm=aes, mode=modes.CTR(iv)).encryptor()
     # since in CTR more, each block is XORed with plaintext, if plaintext is
     # all 0s we effectively can extract the enctyption stream
-    dummy = b"\x00" * (length or (aes.key_size // 8))
+    dummy = b"\x00" * (aes.key_size // 8)
     while True:
         yield encryptor.update(dummy)
 
@@ -156,7 +179,7 @@ class Feistel:
         >>> assert data == plaintext, (data, plaintext)
         """
         left, right = cls.split(data)
-        keystream = next(aes_ctr_keystream_generator(key, left, len(right)))
+        keystream = aes_ctr_keystream_generator(key, left)
         return left + xor(right, keystream)
 
     @classmethod
