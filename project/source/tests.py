@@ -35,6 +35,7 @@ class File:
     path: pathlib.Path = dataclasses.field(init=False)
 
     stdout: bytes = dataclasses.field(init=False, repr=False, default=b"")
+    stderr: bytes = dataclasses.field(init=False, repr=False, default=b"")
     password: typing.Optional[bytes] = dataclasses.field(
         init=False, repr=False, default=b""
     )
@@ -57,9 +58,12 @@ class File:
         file.path = path
         return file
 
-    def with_result(self, password: typing.Optional[bytes], stdout: bytes):
+    def with_result(
+        self, password: typing.Optional[bytes], stdout: bytes, stderr: bytes
+    ):
         self.password = self.password or password
         self.stdout = stdout
+        self.stderr = stderr
         return self
 
     @property
@@ -99,7 +103,14 @@ class File:
     @property
     @cache
     def keys(self):
-        return Keys.from_master(self.master_key, self.metadata.salt)
+        keys = Keys.from_master(self.master_key, self.metadata.salt)
+        assert keys.master == self.derived_keys.master, (
+            "master key does not match which means either "
+            "1) master password printed to stdout is wrong "
+            "2) you are reading password incorrectly "
+            "3) or you are doing HMAC incorrectly"
+        )
+        return keys
 
     @property
     @cache
@@ -149,9 +160,10 @@ class File:
     def verify_encryption(self):
         encrypted = self.feistel.encrypt(self.written_data)
         assert self.size == self.written_size
-        assert (
-            self.feistel.mac(self.data) == encrypted.mac
-        ), "encrypted file mac does not match meaning file was incorrectly encrypted"
+        assert self.feistel.mac(self.data) == encrypted.mac, (
+            "encrypted file mac does not match "
+            "meaning file was incorrectly encrypted"
+        )
         assert self.metadata_path.exists()
         assert self.metadata.mac == encrypted.mac
         return True
@@ -160,7 +172,10 @@ class File:
         assert self.size == self.written_size
         assert self.derived_feistel.mac(self.data) == self.derived_feistel.mac(
             self.written_data
-        ), "mac of decrypted file does not match original data mac meading decryption is incorrect"
+        ), (
+            "mac of decrypted file does not match original data mac "
+            "meaning decryption is incorrect"
+        )
         assert not self.metadata_path.exists()
         return True
 
@@ -174,6 +189,11 @@ class Program(Shell):
     files: typing.List[File] = dataclasses.field(default_factory=list)
     terms: typing.List[str] = dataclasses.field(default_factory=list)
     found_files: typing.Set[File] = dataclasses.field(default_factory=set)
+
+    def __post_init__(self):
+        if self.stdin:
+            assert self.stdin not in self.stdout
+            assert self.stdin not in self.stderr
 
     @classmethod
     def call(cls, args: str, password: bytes = None, timeout: int = None):
@@ -194,7 +214,10 @@ class Program(Shell):
         )
         return cls(
             files=[
-                i.with_result(password=password, stdout=result.stdout) for i in files
+                i.with_result(
+                    password=password, stdout=result.stdout, stderr=result.stderr
+                )
+                for i in files
             ],
             **dataclasses.asdict(result),
         )
@@ -206,7 +229,10 @@ class Program(Shell):
         )
         return cls(
             files=[
-                i.with_result(password=password, stdout=result.stdout) for i in files
+                i.with_result(
+                    password=password, stdout=result.stdout, stderr=result.stderr
+                )
+                for i in files
             ],
             **dataclasses.asdict(result),
         )
