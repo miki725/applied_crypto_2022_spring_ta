@@ -159,30 +159,26 @@ class File:
 
     def verify_encryption(self):
         encrypted = self.feistel.encrypt(self.written_data)
+        assert self.data[:16] == encrypted.ciphertext[:16]
+        assert self.data[-16:] == encrypted.ciphertext[-16:]
         assert self.size == self.written_size
         assert self.feistel.mac(self.data) == encrypted.mac, (
             "encrypted file mac does not match "
             "meaning file was incorrectly encrypted",
-            f"first 16 bytes of encrypted file: {self.data[:16]!r}",
-            f"first 16 bytes of reference encryption: {encrypted.ciphertext[:16]!r}",
-            f"last 16 bytes of encrypted file: {self.data[-16:]!r}",
-            f"last 16 bytes of reference encryption: {encrypted.ciphertext[-16:]!r}",
         )
         assert self.metadata_path.exists()
         assert self.metadata.mac == encrypted.mac
         return True
 
     def verify_decryption(self):
+        assert self.data[:16] == self.written_data[:16]
+        assert self.data[-16:] == self.written_data[-16:]
         assert self.size == self.written_size
         assert self.derived_feistel.mac(self.data) == self.derived_feistel.mac(
             self.written_data
         ), (
             "mac of decrypted file does not match original data mac "
             "meaning decryption is incorrect",
-            f"first 16 bytes of decrypted file: {self.data[:16]!r}",
-            f"first 16 bytes of original file: {self.written_data[:16]!r}",
-            f"last 16 bytes of decrypted file: {self.data[-16:]!r}",
-            f"last 16 bytes of original file: {self.written_data[-16:]!r}",
         )
         assert not self.metadata_path.exists()
         return True
