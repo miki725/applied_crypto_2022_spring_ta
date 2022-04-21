@@ -17,27 +17,27 @@ if __name__ == "__main__":
         # # ctr round
         {
             "key": secrets.token_bytes(16).hex(),
-            "data": secrets.token_bytes(64).hex(),
+            "data": secrets.token_bytes(16 * 10).hex(),
         },
         # hmac round
         {
             "key": secrets.token_bytes(16).hex(),
-            "data": secrets.token_bytes(64).hex(),
+            "data": secrets.token_bytes(16 * 10).hex(),
         },
         # feistel encrypt
         {
             "keys": [i.hex() for i in Keys.from_password(generate_password()).feistel],
-            "plaintext": secrets.token_bytes(64).hex(),
+            "plaintext": secrets.token_bytes(16 * 10).hex(),
         },
         # feistel decrypt
         {
             "keys": [i.hex() for i in Keys.from_password(generate_password()).feistel],
-            "ciphertext": secrets.token_bytes(64).hex(),
+            "ciphertext": secrets.token_bytes(16 * 10).hex(),
         },
         # hmac
         {
             "key": secrets.token_bytes(16).hex(),
-            "data": secrets.token_bytes(64).hex(),
+            "data": secrets.token_bytes(16 * 10).hex(),
         },
         # ascii words
         GeneratedText.generate(10, 10, with_unicode=False).text,
