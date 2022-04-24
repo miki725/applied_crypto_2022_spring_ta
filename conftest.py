@@ -92,6 +92,10 @@ class Shell:
     stderr: bytes
     exit_code: int
 
+    def __post_init__(self):
+        assert b"No such file or directory" not in self.stderr
+        assert b"Traceback (most recent call last)" not in self.stderr
+
     def __bool__(self):
         return not bool(self.exit_code)
 

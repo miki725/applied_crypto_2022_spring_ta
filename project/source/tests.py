@@ -195,6 +195,7 @@ class Program(Shell):
     found_files: typing.Set[File] = dataclasses.field(default_factory=set)
 
     def __post_init__(self):
+        super().__post_init__()
         if self.stdin:
             assert self.stdin not in self.stdout
             assert self.stdin not in self.stderr
