@@ -1,5 +1,7 @@
 # Applied Cryptography TA Scripts
 
+TA repo for https://github.com/viega/applied_crypto_2022_spring/
+
 ## Structure
 
 ```shell
