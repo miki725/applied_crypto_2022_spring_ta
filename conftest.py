@@ -100,7 +100,7 @@ class Shell:
         return not bool(self.exit_code)
 
 
-def shell(cmd: str, stdin: bytes = None, timeout: typing.Optional[int] = 10):
+def shell(cmd: str, stdin: bytes = None, timeout: typing.Optional[int] = None):
     before = datetime.datetime.now()
     p = subprocess.Popen(
         cmd.split(),
@@ -108,7 +108,7 @@ def shell(cmd: str, stdin: bytes = None, timeout: typing.Optional[int] = 10):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    out, err = p.communicate(stdin, timeout=timeout)
+    out, err = p.communicate(stdin, timeout=timeout or 10)
     after = datetime.datetime.now()
     return Shell(
         cmd=cmd,
