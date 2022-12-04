@@ -33,6 +33,8 @@ Gradescope runs on py3.6 so its easier to reproduce similar env locally.
 You can use [`pyenv`](https://github.com/pyenv/pyenv):
 
 ```bash
+cd applied_crypto_2022_spring_ta
+pyenv update
 pyenv install 3.6.15
 ```
 
